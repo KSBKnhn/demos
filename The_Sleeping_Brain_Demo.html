@@ -1,0 +1,1172 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+</head>
+<body>
+<meta charset="utf-8">
+<title>Sleeping Brain Demo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: drei Ansichten per Hash – #start (Übersicht), #buehne (16:9-Bühne 1600×900, skaliert, Keynote-dunkel, mit HUD), #mitmachen (iOS-artige Quest-App). Sprache DE/EN per data-lang. */
+:root{
+  --bg:#F5F5F7; --surface:#FFFFFF; --fill:#E9E9EE; --fg:#1D1D1F; --muted:#6E6E73; --line:rgba(27,42,71,.10);
+  --navy:#1B2A47; --amber:#F5B000; --amber-ink:#8A5800; --btn:#1B2A47; --btn-fg:#FFFFFF; --ok:#1E8E3E; --bad:#C9302C;
+  --st-bg:#090E1A; --st-fg:#F5F5F7; --st-muted:rgba(245,245,247,.62); --st-card:rgba(255,255,255,.06); --st-line:rgba(255,255,255,.13); --st-amber:#F7B500; --st-blue:#9DBAD6;
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue","Segoe UI",Roboto,Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#000000; --surface:#1C1C1E; --fill:#2C2C2E; --fg:#F5F5F7; --muted:#98989D; --line:rgba(255,255,255,.10);
+  --navy:#B9CBE6; --amber:#F7B500; --amber-ink:#F7C548; --btn:#F7B500; --btn-fg:#14100A; --ok:#4CD964; --bad:#FF6961; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#000000; --surface:#1C1C1E; --fill:#2C2C2E; --fg:#F5F5F7; --muted:#98989D; --line:rgba(255,255,255,.10);
+  --navy:#B9CBE6; --amber:#F7B500; --amber-ink:#F7C548; --btn:#F7B500; --btn-fg:#14100A; --ok:#4CD964; --bad:#FF6961; color-scheme:dark}
+[hidden]{display:none!important}
+:root[data-lang="en"] .l-de{display:none!important}
+:root:not([data-lang="en"]) .l-en{display:none!important}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);-webkit-font-smoothing:antialiased;font-size:16px;line-height:1.5}
+a{color:inherit}
+button{font:inherit;cursor:pointer}
+button:disabled{cursor:default}
+:focus-visible{outline:3px solid var(--amber);outline-offset:2px;border-radius:6px}
+h1,h2,h3{text-wrap:balance;margin:0}
+p{margin:0}
+
+/* ---------- Übersicht ---------- */
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:48px 80px;display:flex;flex-direction:column;gap:72px}
+.topline{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.seg{display:inline-flex;background:var(--fill);border-radius:10px;padding:3px;gap:2px}
+.seg button{border:0;background:none;color:var(--fg);padding:6px 14px;border-radius:8px;font-size:14px;font-weight:600}
+.seg button[aria-pressed="true"]{background:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.eyebrow{font-size:13px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--amber-ink)}
+.hero{display:flex;flex-direction:column;gap:18px}
+.hero h1{font-size:clamp(40px,7vw,76px);line-height:1.02;letter-spacing:-.035em;font-weight:700}
+.hero h1 span{color:var(--muted)}
+.lead{font-size:clamp(18px,2.2vw,22px);color:var(--muted);max-width:40em;line-height:1.45}
+.launch{display:grid;grid-template-columns:1fr 1fr 280px;gap:16px}
+.tile{background:var(--surface);border-radius:22px;padding:28px;display:flex;flex-direction:column;gap:10px;text-decoration:none;min-width:0;transition:transform .2s}
+a.tile:hover{transform:translateY(-2px)}
+.tile h3{font-size:24px;letter-spacing:-.02em}
+.tile p{color:var(--muted)}
+.tile .go{margin-top:auto;padding-top:14px;font-weight:600;color:var(--navy)}
+.tile.dark{background:#0B1220;color:#F5F5F7}
+.tile.dark p{color:rgba(245,245,247,.65)}
+.tile.dark .go{color:#F7B500}
+.qrtile{align-items:center;text-align:center}
+.qrbox{background:#fff;border-radius:14px;padding:10px;width:176px;height:176px;display:grid;place-items:center;flex:none}
+.qrbox img,.qrbox canvas{width:156px!important;height:156px!important}
+.qr-missing{font-size:12px;color:#6E6E73;padding:8px;word-break:break-all}
+.sec{display:flex;flex-direction:column;gap:22px}
+.sec h2{font-size:clamp(28px,4vw,40px);letter-spacing:-.03em;line-height:1.1}
+.sec>p{color:var(--muted);max-width:44em;font-size:17px}
+.mech{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.mc{background:var(--surface);border-radius:20px;padding:22px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.mc h3{font-size:19px;letter-spacing:-.01em}
+.mc p{color:var(--muted);font-size:15px}
+.mc .why{font-size:13px;color:var(--amber-ink);font-weight:600;margin-top:auto;padding-top:6px}
+.evid{background:#0B1220;color:#F5F5F7;border-radius:22px;padding:28px;display:grid;grid-template-columns:1.2fr 1fr;gap:28px;align-items:center}
+.evid p{color:rgba(245,245,247,.72)}
+.evid .nums{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.evid .nums div{background:rgba(255,255,255,.06);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:2px}
+.evid .nums b{font-size:32px;font-variant-numeric:tabular-nums;color:#F7B500;letter-spacing:-.02em}
+.evid .nums small{color:rgba(245,245,247,.7);font-size:13px}
+.tablebox{overflow-x:auto;background:var(--surface);border-radius:20px}
+table.map{width:100%;border-collapse:collapse;font-size:15px;min-width:560px}
+.map th,.map td{text-align:left;padding:11px 18px;border-top:1px solid var(--line);vertical-align:top}
+.map th{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;border-top:0}
+.map td:first-child,.map td:nth-child(3){font-variant-numeric:tabular-nums;color:var(--muted);white-space:nowrap}
+.map tr.new td{color:var(--amber-ink)}
+.note{background:var(--fill);border-radius:16px;padding:18px 22px;color:var(--fg);font-size:15px;display:flex;flex-direction:column;gap:8px}
+.note ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+
+/* ---------- Bühne ---------- */
+#v-buehne{position:fixed;inset:0;background:var(--st-bg);color:var(--st-fg);z-index:50;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.stagewrap{position:relative;flex:1;overflow:hidden}
+.deck{position:absolute;left:0;top:0;width:1600px;height:900px;transform-origin:0 0;background:var(--st-bg);overflow:hidden}
+.deck::before{content:"";position:absolute;inset:0;background:radial-gradient(900px 600px at 92% 110%,rgba(247,181,0,.15),transparent 60%),radial-gradient(800px 600px at -10% -20%,rgba(157,186,214,.13),transparent 60%);pointer-events:none}
+.slide{position:absolute;inset:0;padding:104px 120px 92px;display:flex;flex-direction:column;gap:26px;opacity:0;transform:scale(.985);transition:opacity .55s ease,transform .7s cubic-bezier(.2,.7,.2,1);pointer-events:none}
+.slide.on{opacity:1;transform:none;pointer-events:auto}
+.chrome{position:absolute;left:120px;top:24px;font-size:15px;letter-spacing:.16em;text-transform:uppercase;color:var(--st-muted);font-weight:600;z-index:3;display:flex;align-items:center;gap:18px}
+.chrome img{height:58px;opacity:.9;margin:-10px 0}
+.logo-eu{display:block;height:auto}
+.chrome i{font-style:normal;color:var(--st-amber)}
+.hud{position:absolute;top:28px;right:120px;display:flex;gap:26px;align-items:center;z-index:3}
+.chd{display:flex;gap:7px;align-items:center}
+.chd i{width:26px;height:6px;border-radius:3px;background:rgba(255,255,255,.15);transition:background .4s}
+.chd i.done{background:rgba(247,181,0,.5)}
+.chd i.cur{background:#F7B500;width:40px}
+.chd span{font-size:15px;color:var(--st-muted);font-weight:600;margin-left:8px;letter-spacing:.02em}
+.meter{display:flex;align-items:center;gap:12px;font-size:15px;color:var(--st-muted);font-weight:600}
+.meter .mb{width:170px;height:10px;border-radius:5px;background:rgba(255,255,255,.12);overflow:hidden}
+.meter .mb i{display:block;height:100%;width:0;background:linear-gradient(90deg,#7D9CFF,#5BD67C,#F7B500);transition:width .9s cubic-bezier(.2,.7,.2,1)}
+.meter b{color:var(--st-fg);font-variant-numeric:tabular-nums;min-width:48px}
+.meter em{font-style:normal;color:#F7B500}
+.toast{position:absolute;left:50%;bottom:30px;transform:translate(-50%,16px);opacity:0;background:#F7B500;color:#14100A;padding:14px 28px;border-radius:999px;font-size:24px;font-weight:700;transition:opacity .5s,transform .5s;z-index:5;white-space:nowrap;pointer-events:none;box-shadow:0 10px 40px rgba(247,181,0,.35)}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.k{font-size:22px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--st-amber)}
+.h{font-size:76px;line-height:1.04;letter-spacing:-.035em;font-weight:700}
+.h.xl{font-size:150px;letter-spacing:-.05em;line-height:.95}
+.sub{font-size:30px;line-height:1.35;color:var(--st-muted);max-width:30em}
+.grad{background:linear-gradient(95deg,#FFD866 0%,#F7B500 45%,#F08A00 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.live{position:absolute;right:120px;bottom:36px;display:flex;align-items:center;gap:12px;font-size:20px;font-weight:600;color:var(--st-fg);background:var(--st-card);border:1px solid var(--st-line);padding:10px 20px;border-radius:999px}
+.live::before{content:"";width:12px;height:12px;border-radius:50%;background:#FF453A;animation:pulse 1.6s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,69,58,.55)}100%{box-shadow:0 0 0 14px rgba(255,69,58,0)}}
+.demo-chip{position:absolute;left:120px;bottom:42px;font-size:16px;color:var(--st-muted);letter-spacing:.04em}
+.row{display:flex;gap:56px;align-items:stretch;flex:1;min-height:0}
+.col{flex:1;min-width:0;display:flex;flex-direction:column;gap:24px}
+.card{background:var(--st-card);border:1px solid var(--st-line);border-radius:28px;padding:32px}
+.bigq{display:flex;gap:28px;align-items:center}
+.qrstage{background:#fff;border-radius:22px;padding:14px;width:220px;height:220px;display:grid;place-items:center;flex:none}
+.qrstage img,.qrstage canvas{width:192px!important;height:192px!important}
+.bars{display:grid;gap:18px;align-items:end;height:330px}
+.bar{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:10px;height:100%}
+.bar .f{width:100%;border-radius:12px 12px 4px 4px;background:linear-gradient(180deg,#FFD866,#F7B500);transition:height .5s cubic-bezier(.2,.7,.2,1);min-height:4px}
+.bar .n{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums}
+.bar .l{font-size:20px;color:var(--st-muted);text-align:center;line-height:1.2}
+.hbars{display:flex;flex-direction:column;gap:20px}
+.hb{display:grid;grid-template-columns:330px 1fr 100px;gap:22px;align-items:center;font-size:26px}
+.hb .t{height:44px;background:var(--st-card);border-radius:12px;overflow:hidden}
+.hb .t>div{height:100%;background:linear-gradient(90deg,#F7B500,#FFD866);border-radius:12px;transition:width .5s cubic-bezier(.2,.7,.2,1)}
+.hb .p{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.stat{font-size:150px;font-weight:700;letter-spacing:-.05em;line-height:1;font-variant-numeric:tabular-nums}
+.stat small{font-size:40px;letter-spacing:0;color:var(--st-muted);font-weight:500;margin-left:10px}
+.goals{display:grid;grid-template-columns:repeat(5,1fr);gap:20px}
+.goal{background:var(--st-card);border:1px solid var(--st-line);border-radius:24px;padding:28px 26px;display:flex;flex-direction:column;gap:18px;min-height:270px}
+.goal b{font-size:20px;color:var(--st-amber);font-variant-numeric:tabular-nums}
+.goal span{font-size:32px;font-weight:600;line-height:1.18;letter-spacing:-.015em}
+.goal.pil{background:linear-gradient(160deg,rgba(247,181,0,.22),rgba(247,181,0,.05));border-color:rgba(247,181,0,.45)}
+.list{display:flex;flex-direction:column;gap:22px;font-size:34px;line-height:1.25}
+.list>div{display:flex;gap:18px}
+.list>div::before{content:"";flex:none;width:10px;height:10px;border-radius:50%;background:var(--st-amber);margin-top:16px}
+.legend{display:flex;flex-direction:column;gap:14px;font-size:26px;font-weight:600}
+.legend div{display:flex;gap:14px;align-items:center}
+.legend i{width:22px;height:22px;border-radius:50%;flex:none}
+.words{font-size:80px;font-weight:700;letter-spacing:-.03em;line-height:1.08}
+.words span{display:block}
+.words span:nth-child(even){color:var(--st-muted)}
+.wave-lab{display:flex;flex-direction:column;justify-content:space-around;font-size:22px;width:170px;flex:none}
+.wave-lab b{display:block;font-size:26px;letter-spacing:.04em}
+.wave-lab small{color:var(--st-muted);font-family:var(--mono);font-size:18px}
+.tree{display:flex;flex-direction:column;gap:10px;font-size:34px}
+.tree .t1{font-weight:700;font-style:italic;display:flex;gap:14px;align-items:baseline}
+.tree .t2{padding-left:46px;color:var(--st-muted);font-size:30px}
+.tree .t1::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--st-amber);flex:none;transform:translateY(-6px)}
+.thesis{font-size:58px;font-weight:700;line-height:1.14;letter-spacing:-.03em;max-width:24em}
+.thesis em{font-style:normal;color:var(--st-amber)}
+.tline{position:relative;height:16px;border-radius:8px;background:linear-gradient(90deg,#5BD67C,#F7B500 45%,#FF6B3D 75%,#B24BF3);margin-top:30px}
+.tline i{position:absolute;top:-18px;width:52px;height:52px;border-radius:50%;background:#fff;color:#0B1220;display:grid;place-items:center;font-style:normal;font-weight:800;font-size:26px;box-shadow:0 6px 24px rgba(0,0,0,.4);transition:left 1.2s cubic-bezier(.2,.7,.2,1)}
+.tline-l{display:flex;justify-content:space-between;font-size:20px;color:var(--st-muted);margin-top:22px;letter-spacing:.06em}
+.phasebar{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
+.ph{border:1px solid var(--st-line);background:var(--st-card);color:var(--st-fg);border-radius:20px;padding:18px 18px;text-align:left;display:flex;flex-direction:column;gap:6px;transition:background .25s,border-color .25s,transform .25s}
+.ph b{font-size:30px;letter-spacing:-.01em}
+.ph small{font-size:16px;color:var(--st-muted);line-height:1.25;min-height:40px}
+.ph .lvl{height:6px;border-radius:3px;background:var(--st-line);overflow:hidden}
+.ph .lvl i{display:block;height:100%;background:linear-gradient(90deg,#F7B500,#FF6B3D)}
+.ph.on{background:rgba(247,181,0,.16);border-color:rgba(247,181,0,.7);transform:translateY(-4px)}
+.phdetail{display:grid;grid-template-columns:420px 1fr;gap:48px;align-items:start;flex:1}
+.phdetail .ttl{font-size:56px;font-weight:700;letter-spacing:-.03em;line-height:1.05}
+.phdetail .tag{font-size:26px;color:var(--st-amber);font-weight:700;margin-top:12px;text-transform:uppercase;letter-spacing:.03em;line-height:1.25}
+.sym{display:flex;flex-direction:column;gap:16px;font-size:34px;line-height:1.25}
+.sym div{display:grid;grid-template-columns:64px 1fr;gap:12px}
+.sym div b{color:var(--st-muted);font-variant-numeric:tabular-nums;font-weight:500}
+.statement{flex:1;display:flex;flex-direction:column;justify-content:center;gap:30px}
+.statement .h{font-size:112px;max-width:13em}
+.chap{flex:1;display:flex;flex-direction:column;justify-content:center;gap:26px}
+.chap .num{font-size:24px;font-weight:700;color:var(--st-amber);letter-spacing:.14em;text-transform:uppercase}
+.chat{display:flex;flex-direction:column;gap:20px;flex:1;justify-content:center}
+.bub{max-width:880px;font-size:42px;padding:22px 32px;border-radius:36px;line-height:1.22;font-weight:500}
+.bub.l{background:#2C2C2E;align-self:flex-start;border-bottom-left-radius:10px}
+.bub.r{background:#0A84FF;color:#fff;align-self:flex-end;border-bottom-right-radius:10px}
+.bub small{display:block;font-size:22px;opacity:.75;margin-top:8px;font-weight:400}
+.cloud{display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:10px 30px;padding:0 20px;min-height:220px}
+.cloud span{font-weight:700;letter-spacing:-.03em;opacity:0;transform:translateY(12px) scale(.96);transition:opacity .5s,transform .5s}
+.cloud span.in{opacity:1;transform:none}
+.cloud span.hit{text-shadow:0 0 24px rgba(247,181,0,.7)}
+.empty{font-size:24px;color:var(--st-muted);font-weight:400!important}
+.loopbox{display:flex;align-items:center;gap:16px;margin-top:36px}
+.step{flex:1;background:var(--st-card);border:1px solid var(--st-line);border-radius:26px;padding:34px 24px;display:flex;flex-direction:column;gap:14px;align-items:flex-start}
+.step b{font-size:20px;color:var(--st-amber);font-variant-numeric:tabular-nums}
+.step span{font-size:40px;font-weight:700;letter-spacing:-.02em}
+.arrow{font-size:40px;color:var(--st-muted);flex:none}
+.loopnote{margin-top:24px;font-size:30px;color:var(--st-amber);font-weight:600}
+.watch{width:320px;height:384px;border-radius:84px;background:#111;border:10px solid #2A2A2D;box-shadow:0 30px 80px rgba(0,0,0,.5),inset 0 0 0 2px #3A3A3D;display:grid;place-items:center;flex:none}
+.plus{display:flex;flex-direction:column;gap:14px;font-size:44px;font-weight:600;letter-spacing:-.01em}
+.plus span{color:var(--st-amber);margin-right:6px}
+.health{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;flex:1}
+.hk{background:#1C1C1E;border-radius:22px;padding:22px 26px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.hk .cat{font-size:18px;font-weight:600;display:flex;gap:8px;align-items:center}
+.hk .cat i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.hk .lbl{font-size:15px;color:#8E8E93;font-weight:600;text-transform:uppercase;letter-spacing:.03em;margin-top:6px}
+.hk .val{font-size:54px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.05}
+.hk .val small{font-size:22px;color:#8E8E93;font-weight:600;margin-left:6px}
+.hk .rng{font-size:16px;color:#8E8E93}
+.hk .txt{font-size:18px;color:#C7C7CC;line-height:1.35;margin-top:auto;padding-top:8px}
+.hk svg{margin-top:auto}
+.foot{font-size:17px;color:var(--st-muted)}
+.timer{font-size:200px;font-weight:700;letter-spacing:-.05em;line-height:1;font-variant-numeric:tabular-nums}
+.timer.s{font-size:110px}
+.btn-st{align-self:flex-start;background:var(--st-fg);color:var(--st-bg);border:0;border-radius:999px;padding:14px 28px;font-size:22px;font-weight:600}
+.sys{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;flex:1}
+.sys .card{display:flex;flex-direction:column;gap:16px}
+.sys .card b{font-size:22px;color:var(--st-amber);letter-spacing:.08em;text-transform:uppercase}
+.sys .card span{font-size:42px;font-weight:700;letter-spacing:-.02em;line-height:1.12}
+.sys .card .qs{display:flex;flex-direction:column;gap:12px;font-size:30px;font-weight:600;line-height:1.2}
+.iam{font-size:92px;font-weight:700;letter-spacing:-.04em;line-height:1.05}
+.iam span:nth-child(2){color:var(--st-amber)}
+.tasks{display:flex;flex-direction:column;gap:14px;font-size:30px;line-height:1.25}
+.tasks div{display:grid;grid-template-columns:44px 1fr;gap:10px}
+.tasks div b{color:var(--st-amber);font-variant-numeric:tabular-nums}
+.tasks .gap{height:6px}
+.pact{display:flex;flex-direction:column;gap:18px}
+.pact div{font-size:44px;font-weight:700;letter-spacing:-.02em;background:var(--st-card);border:1px solid var(--st-line);border-radius:24px;padding:28px 32px;display:flex;gap:18px;align-items:center}
+.pact div::before{content:"✦";color:var(--st-amber);font-size:32px}
+.chal{display:grid;grid-template-columns:repeat(7,1fr);gap:10px}
+.chal i{aspect-ratio:1;border-radius:14px;background:var(--st-card);border:1px solid var(--st-line);display:grid;place-items:center;font-style:normal;font-size:20px;color:var(--st-muted);font-weight:600}
+.chal i.on{background:#30D158;border-color:#30D158;color:#05230F}
+.ctrl{height:64px;display:flex;align-items:center;gap:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));border-top:1px solid var(--st-line);background:#05080F;flex:none}
+.ctrl button,.ctrl a{background:rgba(255,255,255,.08);color:var(--st-fg);border:0;border-radius:10px;height:40px;padding:0 14px;font-size:14px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.ctrl button[aria-pressed="true"]{background:rgba(247,181,0,.22);color:#FFD866}
+.ctrl .count{color:var(--st-muted);font-size:14px;font-variant-numeric:tabular-nums;min-width:56px;text-align:center}
+.ctrl .grow{flex:1}
+.prog{height:3px;background:rgba(255,255,255,.06);flex:none}
+.prog i{display:block;height:100%;background:var(--st-amber);transition:width .4s}
+
+/* ---------- Mitmachen (Handy) ---------- */
+#v-mitmachen{min-height:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.ph-top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:saturate(180%) blur(18px);-webkit-backdrop-filter:saturate(180%) blur(18px);border-bottom:1px solid var(--line)}
+.ph-in{max-width:560px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.ph-top .ph-in{padding-block:10px 10px;display:flex;flex-direction:column;gap:9px}
+.ph-title{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.ph-title b{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.ph-title .r{display:flex;gap:8px;align-items:center}
+.ph-title a{font-size:15px;color:var(--navy);text-decoration:none;font-weight:500}
+.xp{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);font-weight:600}
+.xp b{color:var(--fg);font-variant-numeric:tabular-nums;font-size:14px}
+.xp .xb{flex:1;height:6px;border-radius:3px;background:var(--fill);overflow:hidden}
+.xp .xb i{display:block;height:100%;background:linear-gradient(90deg,#7D9CFF,#5BD67C,#F5B000);transition:width .6s}
+.xp em{font-style:normal;color:var(--amber-ink)}
+.dots{display:flex;gap:4px}
+.dots button{flex:1;height:5px;border-radius:3px;border:0;background:var(--fill);padding:0}
+.dots button.done{background:color-mix(in srgb,var(--amber) 55%,var(--fill))}
+.dots button.cur{background:var(--amber)}
+.ph-body{padding-block:22px 120px;display:flex;flex-direction:column;gap:16px}
+.st-k{font-size:13px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--amber-ink)}
+.st-h{font-size:29px;line-height:1.12;letter-spacing:-.025em;font-weight:700}
+.st-p{color:var(--muted);font-size:16px}
+.grp{background:var(--surface);border-radius:14px;overflow:hidden}
+.grp-h{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:0 16px;margin-bottom:-8px}
+.cell{display:flex;align-items:center;gap:12px;padding:13px 16px;border-top:1px solid var(--line);min-height:48px}
+.cell:first-child{border-top:0}
+.cell label,.cell .lab{flex:1;min-width:0;font-size:16px;line-height:1.3}
+.cell .v{color:var(--muted);text-align:right;max-width:60%;overflow-wrap:anywhere}
+.sw{appearance:none;-webkit-appearance:none;flex:none;width:51px;height:31px;border-radius:16px;background:var(--fill);position:relative;transition:background .2s;cursor:pointer;margin:0}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.2);transition:transform .2s}
+.sw:checked{background:#34C759}
+.sw:checked::after{transform:translateX(20px)}
+.bignum{font-size:88px;font-weight:700;letter-spacing:-.05em;text-align:center;line-height:1;font-variant-numeric:tabular-nums}
+.rng{width:100%;accent-color:var(--amber)}
+.scale-l{display:flex;justify-content:space-between;color:var(--muted);font-size:14px;gap:10px}
+.opt{display:flex;flex-direction:column;gap:10px}
+.opt.g5{display:grid;grid-template-columns:repeat(3,1fr)}
+.opt.g6{display:grid;grid-template-columns:repeat(3,1fr)}
+.opt button{background:var(--surface);border:2px solid transparent;border-radius:14px;padding:15px 16px;text-align:left;font-size:17px;color:var(--fg);font-weight:500}
+.opt.g5 button,.opt.g6 button{text-align:center;font-weight:600}
+.opt button[aria-pressed="true"]{border-color:var(--amber);background:color-mix(in srgb,var(--amber) 12%,var(--surface))}
+.opt button.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,var(--surface))}
+.opt button.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 10%,var(--surface))}
+.fb{border-radius:14px;padding:14px 16px;font-size:15px;line-height:1.4;background:var(--surface)}
+.fb.ok{background:color-mix(in srgb,var(--ok) 14%,var(--surface))}
+.fb.no{background:color-mix(in srgb,var(--bad) 10%,var(--surface))}
+.fld{display:flex;flex-direction:column;gap:6px;padding:12px 16px;border-top:1px solid var(--line)}
+.fld:first-child{border-top:0}
+.fld label{font-size:13px;color:var(--muted);font-weight:500}
+.fld input,.fld textarea{border:0;background:transparent;color:var(--fg);font:inherit;font-size:17px;padding:2px 0;resize:vertical;outline:none;width:100%}
+.fld textarea{min-height:52px}
+.pbtn{background:var(--btn);color:var(--btn-fg);border:0;border-radius:14px;padding:15px 18px;font-size:17px;font-weight:600;width:100%}
+.pbtn:disabled{opacity:.4}
+.sbtn{background:var(--fill);color:var(--fg);border:0;border-radius:14px;padding:13px 18px;font-size:16px;font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips span{background:var(--surface);border-radius:999px;padding:8px 14px;font-weight:500;display:inline-flex;gap:8px;align-items:center}
+.chips span.hit{background:color-mix(in srgb,var(--amber) 22%,var(--surface))}
+.chips button{border:0;background:none;color:var(--muted);padding:0;font-size:16px;line-height:1}
+.res{background:var(--surface);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:8px}
+.res b{font-size:20px}
+.fine{font-size:13px;color:var(--muted);line-height:1.45}
+.banner{background:color-mix(in srgb,var(--amber) 14%,var(--surface));border-radius:14px;padding:12px 14px;font-size:14px;line-height:1.4}
+.bc{border-radius:22px;padding:24px;background:linear-gradient(150deg,#1B2A47,#0B1220);color:#F5F5F7;display:flex;flex-direction:column;gap:6px;min-height:190px}
+.bc .n{font-size:26px;font-weight:700;letter-spacing:-.02em}
+.bc .s{color:#F7B500;font-weight:600}
+.bc .t{color:rgba(245,245,247,.7);font-size:15px;margin-top:auto}
+.counter{display:flex;align-items:center;gap:14px}
+.counter button{width:40px;height:40px;border-radius:50%;border:0;background:var(--fill);color:var(--fg);font-size:22px;font-weight:600}
+.counter b{font-size:24px;min-width:32px;text-align:center;font-variant-numeric:tabular-nums}
+.badges{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.bdg{aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:11px;text-align:center;background:var(--fill);color:var(--muted);padding:6px;line-height:1.15}
+.bdg.on{background:linear-gradient(140deg,#FFD866,#F5A300);color:#14100A}
+.streak{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.streak button{aspect-ratio:1;border-radius:12px;border:0;background:var(--fill);color:var(--fg);font-weight:600;font-size:15px;padding:0}
+.streak button.on{background:#34C759;color:#fff}
+.ph-nav{position:fixed;left:0;right:0;bottom:0;background:color-mix(in srgb,var(--bg) 90%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);z-index:5}
+.ph-nav .ph-in{display:flex;gap:10px;padding-block:12px}
+.ph-nav .sbtn{flex:none}
+.ph-nav .pbtn{flex:1}
+.ptoast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 96px);transform:translate(-50%,-10px);background:#1B2A47;color:#fff;padding:10px 18px;border-radius:999px;font-weight:600;font-size:15px;opacity:0;transition:.35s;z-index:20;pointer-events:none;white-space:nowrap}
+.ptoast.on{opacity:1;transform:translate(-50%,0)}
+.ptoast.lv{background:#F5B000;color:#14100A}
+
+@media (max-width:820px){
+  .launch{grid-template-columns:1fr}
+  .qrtile{flex-direction:row;text-align:left;justify-content:flex-start;gap:18px}
+  .mech{grid-template-columns:1fr}
+  .evid{grid-template-columns:1fr}
+  .ctrl .hide-s{display:none}
+}
+@media (max-width:420px){ .evid .nums{grid-template-columns:1fr} .opt.g6{grid-template-columns:repeat(3,1fr)} }
+@media (prefers-reduced-motion: reduce){ *{transition:none!important;animation:none!important} }
+</style>
+
+<!-- ============ ÜBERSICHT ============ -->
+<section class="view" data-view="start" id="v-start">
+  <div class="wrap">
+    <div class="topline"><div style="display:flex;align-items:center;gap:14px;min-width:0"><img data-logo="eu" class="logo-eu" alt="Polestar Europe" style="height:58px;width:auto"><div class="eyebrow"><span class="l-de">Demo · Der Vortrag der Zukunft</span><span class="l-en">Demo · The talk of the future</span></div></div>
+      <div class="seg" role="group" aria-label="Sprache"><button data-setlang="de">DE</button><button data-setlang="en">EN</button></div></div>
+    <header class="hero">
+      <h1>The Sleeping Brain,<br><span><span class="l-de">neu gespielt.</span><span class="l-en">replayed.</span></span></h1>
+      <p class="lead"><span class="l-de">Der Vortrag als Erlebnis: Die Leinwand erzählt, das Handy macht mit, und der ganze Raum spielt eine gemeinsame Mission. Alles läuft über einen Link im Browser, ohne Programm und ohne Abo.</span><span class="l-en">The talk as an experience: the screen tells the story, the phone joins in, and the whole room plays one shared mission. Everything runs from one link in the browser, with no software and no subscription.</span></p>
+    </header>
+
+    <div class="launch">
+      <a class="tile dark" href="#buehne">
+        <img data-logo="wm" alt="" style="height:34px;width:auto;align-self:flex-start;margin:-4px 0 6px -4px;opacity:.9">
+        <div class="eyebrow" style="color:#F7B500"><span class="l-de">Für Beamer oder TV</span><span class="l-en">For projector or TV</span></div>
+        <h3><span class="l-de">Bühne öffnen</span><span class="l-en">Open stage</span></h3>
+        <p><span class="l-de">25 Szenen im 16:9-Format. Weiter mit Pfeiltasten, Leertaste oder Presenter-Klicker. F für Vollbild, L wechselt die Sprache.</span><span class="l-en">25 scenes in 16:9. Advance with arrow keys, space or a presenter clicker. F for full screen, L switches language.</span></p>
+        <span class="go"><span class="l-de">Bühne starten →</span><span class="l-en">Start stage →</span></span>
+      </a>
+      <a class="tile" href="#mitmachen">
+        <div class="eyebrow"><span class="l-de">Für das Publikum</span><span class="l-en">For the audience</span></div>
+        <h3><span class="l-de">Mitmachen</span><span class="l-en">Join in</span></h3>
+        <p><span class="l-de">Die Quest auf dem Handy: zehn Stationen, Punkte, Level und Abzeichen. Ohne App, ohne Anmeldung.</span><span class="l-en">The quest on the phone: ten stations, points, levels and badges. No app, no sign-up.</span></p>
+        <span class="go"><span class="l-de">Handy-Ansicht ansehen →</span><span class="l-en">See phone view →</span></span>
+      </a>
+      <div class="tile qrtile">
+        <div class="qrbox" data-qr="156"></div>
+        <p style="font-size:14px"><span class="l-de">Mit der Handykamera scannen und direkt mitmachen.</span><span class="l-en">Scan with the phone camera to join.</span></p>
+      </div>
+    </div>
+
+    <section class="sec">
+      <div class="eyebrow"><span class="l-de">Mitmachen</span><span class="l-en">Participation</span></div>
+      <h2><span class="l-de">So spielt der Raum mit</span><span class="l-en">How the room plays along</span></h2>
+      <div class="mech">
+        <div class="mc"><h3><span class="l-de">Gemeinsame Mission</span><span class="l-en">Shared mission</span></h3><p><span class="l-de">„Weckt das schlafende Gehirn.“ Ein Gehirn-Meter auf der Bühne füllt sich mit jeder Antwort aus dem Raum.</span><span class="l-en">"Wake the sleeping brain." A brain meter on stage fills with every answer from the room.</span></p></div>
+        <div class="mc"><h3><span class="l-de">Fünf Wellen-Teams</span><span class="l-en">Five wave teams</span></h3><p><span class="l-de">Delta, Theta, Alpha, Beta, Gamma. Im Team wird zusammen gerätselt, zwischen den Teams um Punkte gespielt.</span><span class="l-en">Delta, Theta, Alpha, Beta, Gamma. Solve together inside a team, compete for points between teams.</span></p></div>
+        <div class="mc"><h3><span class="l-de">Quiz und Sortierspiel</span><span class="l-en">Quiz and sorting game</span></h3><p><span class="l-de">Wellen-Quiz, Phasen-Sortierer und Wortwolke holen den Inhalt aktiv aus dem Kopf, mit sofortiger Rückmeldung.</span><span class="l-en">Wave quiz, phase sorter and word cloud pull the content from memory, with instant feedback.</span></p></div>
+        <div class="mc"><h3><span class="l-de">Erst schätzen, dann erfahren</span><span class="l-en">Predict, then learn</span></h3><p><span class="l-de">Vor der Erklärung geben alle eine Prognose ab, zum Beispiel zur Frage nach 5 % Fehlfunktion.</span><span class="l-en">Everyone predicts before the explanation, for example on the 5% malfunction question.</span></p></div>
+        <div class="mc"><h3><span class="l-de">Level und Abzeichen</span><span class="l-en">Levels and badges</span></h3><p><span class="l-de">Die Stufen heißen wie im Vortrag: schlafend, wach, aufmerksam, energiegeladen, smart &amp; agil.</span><span class="l-en">Levels use the talk's own words: dormant, awake, alert, energetic, smart &amp; agile.</span></p></div>
+        <div class="mc"><h3><span class="l-de">Privat, wo es persönlich wird</span><span class="l-en">Private where it gets personal</span></h3><p><span class="l-de">Selbstcheck, Puls und „Ich bin … Ich fühle … Ich habe …“ bleiben auf dem eigenen Handy. Danach trägt eine 14-Tage-Challenge den Aktivitätsplan in den Alltag.</span><span class="l-en">Self-check, pulse and "I am … I feel … I have …" stay on the participant's phone. A 14-day challenge then carries the activity plan into daily life.</span></p></div>
+      </div>
+    </section>
+
+  </div>
+</section>
+
+<!-- ============ BÜHNE ============ -->
+<section class="view" data-view="buehne" id="v-buehne" hidden>
+  <div class="prog"><i id="prog"></i></div>
+  <div class="stagewrap" id="stagewrap"><div class="deck" id="deck"></div></div>
+  <div class="ctrl">
+    <a href="#start"><span class="l-de">← Übersicht</span><span class="l-en">← Overview</span></a>
+    <div class="grow"></div>
+    <button id="prev" aria-label="Zurück">‹</button>
+    <span class="count" id="count">1 / 25</span>
+    <button id="next" aria-label="Weiter">›</button>
+    <div class="grow"></div>
+    <button id="demo" aria-pressed="true" class="hide-s">Demo</button>
+    <button id="langBtn" class="hide-s">DE · EN</button>
+    <button id="fs"><span class="l-de">Vollbild</span><span class="l-en">Full screen</span></button>
+  </div>
+</section>
+
+<!-- ============ MITMACHEN ============ -->
+<section class="view" data-view="mitmachen" id="v-mitmachen" hidden>
+  <div class="ph-top"><div class="ph-in">
+    <div class="ph-title"><span style="display:flex;align-items:center;gap:8px;min-width:0"><img data-logo="eu" class="logo-eu" alt="Polestar Europe" style="height:28px;width:auto;flex:none"><b>The Sleeping Brain</b></span><div class="r"><div class="seg" role="group" aria-label="Sprache"><button data-setlang="de">DE</button><button data-setlang="en">EN</button></div><a href="#start"><span class="l-de">Übersicht</span><span class="l-en">Overview</span></a></div></div>
+    <div class="xp" id="xp"></div>
+    <div class="dots" id="dots"></div>
+  </div></div>
+  <div class="ph-in"><div class="ph-body" id="station"></div></div>
+  <div class="ph-nav"><div class="ph-in">
+    <button class="sbtn" id="sPrev"><span class="l-de">Zurück</span><span class="l-en">Back</span></button>
+    <button class="pbtn" id="sNext"></button>
+  </div></div>
+  <div class="ptoast" id="ptoast"></div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+(function(){
+const ARTIFACT_URL = "https://claude.ai/artifact/4JGBsZB9pXuPhEUk79erBT";
+const JOIN = ARTIFACT_URL ? ARTIFACT_URL + "#mitmachen" : "";
+const REDUCE = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const L = (de, en) => '<span class="l-de">' + de + '</span><span class="l-en">' + en + '</span>';
+const T = (attrs, de, en) => '<text ' + attrs + ' class="l-de">' + de + '</text><text ' + attrs + ' class="l-en">' + en + '</text>';
+/* ---------- Logos (vom Kunden bereitgestellt) ---------- */
+const SVG_WM = `<svg xmlns="http://www.w3.org/2000/svg" width="356" height="172" viewBox="4 4 356 172"><g><path d="M 64.00,89.00 L 64.00,102.00 L 61.00,113.00 L 53.00,126.00 L 41.00,139.00 L 54.00,127.00 L 62.00,115.00 L 78.00,123.00 L 86.00,132.00 L 69.00,150.00 L 67.00,155.00 L 67.00,163.00 L 61.00,157.00 L 64.00,154.00 L 65.00,150.00 L 63.00,153.00 L 59.00,155.00 L 60.00,159.00 L 66.00,166.00 L 72.00,167.00 L 73.00,165.00 L 69.00,159.00 L 69.00,154.00 L 71.00,150.00 L 87.00,134.00 L 88.00,131.00 L 83.00,123.00 L 64.00,111.00 L 67.00,95.00 L 78.00,95.00 L 73.00,94.00 Z" fill="#ffffff"/><path d="M 46.00,89.00 L 33.00,92.00 L 30.00,101.00 L 30.00,108.00 L 32.00,114.00 L 28.00,115.00 L 26.00,112.00 L 27.00,109.00 L 25.00,114.00 L 30.00,118.00 L 32.00,116.00 L 32.00,104.00 L 36.00,93.00 L 44.00,92.00 L 47.00,98.00 L 51.00,102.00 L 51.00,105.00 L 44.00,112.00 L 43.00,118.00 L 38.00,124.00 L 35.00,134.00 L 26.00,139.00 L 17.00,152.00 L 9.00,156.00 L 10.00,171.00 L 12.00,171.00 L 13.00,164.00 L 15.00,161.00 L 12.00,164.00 L 10.00,163.00 L 11.00,157.00 L 17.00,154.00 L 29.00,140.00 L 35.00,137.00 L 40.00,125.00 L 44.00,121.00 L 46.00,113.00 L 55.00,104.00 Z" fill="#ffffff"/><path d="M 144.00,42.00 L 110.00,47.00 L 109.00,44.00 L 114.00,39.00 L 105.00,42.00 L 109.00,10.00 L 100.00,43.00 L 93.00,38.00 L 96.00,44.00 L 91.00,45.00 L 62.00,35.00 L 94.00,49.00 L 84.00,54.00 L 92.00,53.00 L 93.00,56.00 L 69.00,81.00 L 61.00,78.00 L 64.00,74.00 L 61.00,60.00 L 53.00,60.00 L 49.00,67.00 L 53.00,72.00 L 52.00,64.00 L 59.00,62.00 L 62.00,68.00 L 59.00,78.00 L 66.00,83.00 L 64.00,86.00 L 68.00,84.00 L 82.00,91.00 L 92.00,68.00 L 87.00,70.00 L 87.00,77.00 L 79.00,87.00 L 70.00,81.00 L 96.00,57.00 L 97.00,67.00 L 102.00,57.00 L 120.00,91.00 L 106.00,55.00 L 115.00,57.00 L 109.00,53.00 L 110.00,49.00 Z" fill="#ffffff"/></g><text x="155" y="129" font-family="Tinos, 'Times New Roman', Georgia, serif" font-size="38" font-weight="700" fill="#ffffff">POLESTAR</text><text x="335" y="109" font-family="Tinos, 'Times New Roman', Georgia, serif" font-size="13" font-weight="700" fill="#ffffff">®</text></svg>`;
+const SVG_EU = `<svg xmlns="http://www.w3.org/2000/svg" width="204" height="137" viewBox="18 13 204 137"><path d="M 22 17 H 218 V 66 C 218 99 218 118 120 146 C 22 118 22 99 22 66 Z" fill="#0c2245"/><text x="120" y="60" text-anchor="middle" font-family="Arimo, Arial, Helvetica, sans-serif" font-size="22" font-weight="500" fill="#ffffff" letter-spacing="-0.3">POLESTAR</text><text x="120" y="102" text-anchor="middle" font-family="'Z003', 'URW Chancery L', cursive" font-size="44" font-style="italic" fill="#f0ab00">europe</text></svg>`;
+const LOGO = { wm: "data:image/svg+xml;charset=utf-8," + encodeURIComponent(SVG_WM), eu: "data:image/svg+xml;charset=utf-8," + encodeURIComponent(SVG_EU) };
+$$("[data-logo]").forEach(i => i.src = LOGO[i.dataset.logo]);
+function store(k, v){ try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch(e){ return null; } }
+
+/* ---------- Sprache ---------- */
+let lang = store("sb-lang") === "en" ? "en" : "de";
+function setLang(l){ lang = l; document.documentElement.dataset.lang = l; document.documentElement.lang = l; store("sb-lang", l); $$("[data-setlang]").forEach(b => b.setAttribute("aria-pressed", b.dataset.setlang === l)); }
+$$("[data-setlang]").forEach(b => b.onclick = () => setLang(b.dataset.setlang));
+setLang(lang);
+
+/* ---------- QR ---------- */
+function makeQR(el){
+  const size = +el.dataset.qr || 160; el.innerHTML = "";
+  if (!JOIN){ el.innerHTML = '<span class="qr-missing">QR</span>'; return; }
+  if (window.QRCode){ try { new QRCode(el, {text: JOIN, width: size, height: size, colorDark: "#0B1220", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M}); return; } catch(e){} }
+  el.innerHTML = '<span class="qr-missing">' + esc(JOIN) + '</span>';
+}
+
+/* ---------- Inhalte der Originalfolien ---------- */
+const PHASES = [
+  {n:"I",   tag:["Aktionskrise","Action crisis"], lvl:16, items:[[1,"Heißhunger auf süße und stärkehaltige Lebensmittel: der Kanarienvogel in der Kohlenmine","Craving for sweet and starchy foods: the canary in the coalmine"],[2,"Ungewöhnliches Hungergefühl","Abnormal feeling of hunger"],[3,"(Sehr/zu) viel bewusstes Nachdenken über Essen und Mahlzeiten","(Very/too) much conscious thinking about food and meals"]]},
+  {n:"II",  tag:null, lvl:33, items:[[4,"Müdigkeit, die in keinem Verhältnis zu Alter und allgemeiner Gesundheit steht","Fatigue disproportionate to age and general health"],[5,"Geringe Fähigkeit, sich zu konzentrieren und zu fokussieren","Poor ability to concentrate and focus"],[6,"Sensorische Überempfindlichkeit","Sensory hypersensitivity"]]},
+  {n:"III", tag:["Auf dem Weg zu einem entkoppelten Gehirn","On the road towards a disconnective brain"], lvl:50, items:[[7,"Kognitive Funktionsstörungen im Allgemeinen","Cognitive dysfunctions in general"],[8,"Probleme mit dem Kurzzeitgedächtnis","Short-term memory problems"],[9,"Häufige Stimmungsschwankungen","Frequent mood swings"]]},
+  {n:"IV",  tag:["Neurodegenerative Erkrankungen","Neurodegenerative disorders"], lvl:66, items:[[11,"Schlafstörungen (Dauer/Qualität)","Sleep disturbances (duration/quality)"],[12,"Verminderte Impulskontrolle","Reduced impulse control"],[13,"Chronische Schmerzen nehmen zu (z. B. Oligoarthritis)","Chronic pains increase (e.g. oligoarthritis)"],[14,"Innere Unruhe","Internal restlessness"]]},
+  {n:"V",   tag:null, lvl:83, items:[[15,"Dinge vergessen und verlieren","Forgetting and losing things"],[16,"Mangel an Einsicht und Empathie","Lack of insight and empathy"],[17,"Gefühle von Depression/Angst","Feelings of depression/anxiety"]]},
+  {n:"VI",  tag:["Allgemeiner Entzündungszustand","General inflammatory state"], lvl:100, items:[[18,"Allergische Erkrankungen","Allergic disorders"],[19,"Dranginkontinenz","Urge incontinence"],[20,"Darmbeschwerden","Intestinal complaints"]]}
+];
+const SYMPTOMS = PHASES.flatMap((p,pi) => p.items.map(([no,de,en]) => ({no, de, en, pi})));
+const TEAMS = [["Delta","#7D9CFF"],["Theta","#5AC8FA"],["Alpha","#5BD67C"],["Beta","#D9D84A"],["Gamma","#FF9F0A"]];
+const LEVELS = [[0,"schlafend","dormant"],[30,"wach","awake"],[70,"aufmerksam","alert"],[120,"energiegeladen","energetic"],[170,"smart & agil","smart & agile"]];
+const levelOf = x => { let i = 0; LEVELS.forEach((l,k) => { if (x >= l[0]) i = k; }); return i; };
+const CHAPTERS = [["Start","Start"],["Die These","The thesis"],["Das Gehirn","The brain"],["Die Symptome","The symptoms"],["Aufwachen","Waking up"],["Körper & Daten","Body & data"],["Du bist der Fall","You are the case"]];
+const OPPOSITE = ["aktiv","wach","lebendig","bewusst","wachsam","aufmerksam","energiegeladen","energetisch","beschäftigt","funktionierend","smart","agil","active","awake","lively","conscious","wakeful","alert","energetic","alive","busy","functioning","agile"];
+
+/* ---------- Bühne: Szenen ---------- */
+const LIVE = (de, en) => '<div class="live">' + L("Mitmachen · " + de, "Join in · " + en) + '</div><div class="demo-chip" data-demochip></div>';
+const SLIDES = [
+ { ch:0, orig:"1", html: `
+   <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:28px">
+     <div class="k">${L("Neu","New")}</div>
+     <div class="h xl">The sleeping<br><span class="grad">brain …</span></div>
+     <p class="sub">${L("Eure Mission heute: das schlafende Gehirn wecken. Jede Antwort und jede Bewegung bringt den Raum ein Stück weiter.","Today's mission: wake up the sleeping brain. Every answer and every move takes the room a step further.")}</p>
+   </div>
+   <div style="display:flex;justify-content:space-between;align-items:flex-end">
+     <div style="display:flex;align-items:center;gap:28px"><img src="${LOGO.eu}" alt="Polestar Europe" style="height:150px;width:auto;filter:drop-shadow(0 10px 30px rgba(0,0,0,.45))"><div style="font-size:28px;line-height:1.35"><b>Alexander Bohlander, PT / DO</b><br><span style="color:var(--st-muted)">Polestar Europe</span></div></div>
+     <div class="bigq"><div style="text-align:right;font-size:24px;line-height:1.35"><b style="font-size:30px">${L("Mach mit.","Join in.")}</b><br><span style="color:var(--st-muted)">${L("Handykamera auf den Code.<br>Team wählen, los geht’s.","Point your camera at the code.<br>Pick a team and go.")}</span></div><div class="qrstage" data-qr="192"></div></div>
+   </div>` },
+
+ { ch:0, html: `
+   <div class="k">Check-in</div>
+   <div class="row">
+     <div class="col" style="flex:1.2">
+       <div class="h">${L("Wie wach ist dein Gehirn gerade?","How awake is your brain right now?")}</div>
+       <p class="sub">${L("1 heißt: Ich schlafe gleich ein. 10 heißt: hellwach. Euer Durchschnitt ist der Startwert fürs Gehirn-Meter.","1 means: about to fall asleep. 10 means: wide awake. Your average is the starting value of the brain meter.")}</p>
+       <div style="margin-top:auto"><div class="stat" id="ciAvg">–</div><div style="font-size:24px;color:var(--st-muted)" id="ciN"></div></div>
+     </div>
+     <div class="col" style="flex:1.4;justify-content:flex-end"><div class="bars" id="ciBars" style="grid-template-columns:repeat(10,1fr)"></div></div>
+   </div>` + LIVE("Check-in","Check-in"),
+   enter(){ poll(["1","2","3","4","5","6","7","8","9","10"], [0,1,1,3,4,6,5,3,1,0], "ciBars", c => {
+       const n = c.reduce((a,b)=>a+b,0), s = c.reduce((a,b,i)=>a+b*(i+1),0);
+       $("#ciAvg").innerHTML = n ? (s/n).toFixed(1).replace(".", lang === "en" ? "." : ",") + "<small>Ø</small>" : "–";
+       $("#ciN").innerHTML = n ? L(n + " Antworten aus dem Raum", n + " answers from the room") : L("Warte auf Antworten …","Waiting for answers …"); }); } },
+
+ { ch:0, orig:"2", html: `
+   <div class="k">${L("Kursziele","Course objectives")}</div>
+   <div class="h" style="font-size:66px">${L("Fünf Fragen. Sechs Kapitel. Eine Mission.","Five questions. Six chapters. One mission.")}</div>
+   <div class="goals" style="margin-top:16px">
+     <div class="goal"><b>01</b><span>${L("Was ist das Gehirn?","What is the brain?")}</span></div>
+     <div class="goal"><b>02</b><span>${L("Wofür ist es da?","What is it for?")}</span></div>
+     <div class="goal"><b>03</b><span>${L("Wie kannst du das Gehirn nähren?","How can you nurture the brain?")}</span></div>
+     <div class="goal"><b>04</b><span>${L("Wie kannst du dem Gehirn schaden?","How can you damage the brain?")}</span></div>
+     <div class="goal pil"><b>05</b><span>${L("Was verbindet Pilates und das Gehirn?","What is the link between Pilates and the brain?")}</span></div>
+   </div>` },
+
+ { ch:1, orig:"3", html: `
+   <div class="k">${L("Die These","The thesis")}</div>
+   <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:20px">
+     <div class="thesis">${L("Wie sich die Symptome einer Hirnfunktionsstörung <em>zeigen und entwickeln</em>, gibt Patient und Therapeut den besten Hinweis darauf, <em>wo der Patient steht</em> – auf der Zeitachse des Schweregrads der Hirnfunktionsstörung.","The <em>manifestation and progression</em> of symptoms of brain dysfunction gives the patient and the therapist the best indication of <em>where the patient is situated</em> on the timeline of the severity of the brain dysfunction.")}</div>
+     <div class="tline"><i id="tlDot" style="left:0">?</i></div>
+     <div class="tline-l"><span>${L("LEICHT","MILD")}</span><span>${L("SCHWER","SEVERE")}</span></div>
+   </div>`,
+   enter(){ const d = $("#tlDot"); d.style.left = "0%"; timers.push(setTimeout(() => d.style.left = "calc(58% - 26px)", 300)); } },
+
+ { ch:1, orig:"4", html: `
+   <div class="k">${L("Das Modell","The model")}</div>
+   <div style="flex:1;display:flex;justify-content:center;align-items:center">
+   <svg viewBox="0 0 1360 600" width="1360" height="600" role="img" aria-label="Modell">
+     <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#9DBAD6"/></marker></defs>
+     <g stroke="#9DBAD6" stroke-width="3" fill="none" opacity=".75">
+       <line x1="680" y1="118" x2="680" y2="236" marker-start="url(#ah)" marker-end="url(#ah)"/>
+       <line x1="420" y1="290" x2="566" y2="290" marker-start="url(#ah)" marker-end="url(#ah)"/>
+       <line x1="794" y1="290" x2="940" y2="290" marker-start="url(#ah)" marker-end="url(#ah)"/>
+       <path d="M265 248 V170 H1095 V248" marker-start="url(#ah)" marker-end="url(#ah)"/>
+       <path d="M1095 332 V410 H265 V332" marker-start="url(#ah)" marker-end="url(#ah)"/>
+       <line x1="680" y1="470" x2="680" y2="340" marker-end="url(#ah)"/>
+       <path d="M480 520 V470 H880 V520" marker-start="url(#ah)" marker-end="url(#ah)"/>
+     </g>
+     <g font-family="-apple-system,Helvetica,Arial" text-anchor="middle">
+       <rect x="430" y="20" width="500" height="96" rx="30" fill="#16213A" stroke="rgba(255,255,255,.18)"/>
+       ${T('x="680" y="60" fill="#F5F5F7" font-size="28" font-weight="700"',"Gesundheitszustand","Health Conditions")}
+       ${T('x="680" y="94" fill="#9DBAD6" font-size="22"',"(verminderte Präzision)","(reduced precision)")}
+       <rect x="110" y="250" width="310" height="80" rx="22" fill="#16213A" stroke="rgba(255,255,255,.18)"/>
+       ${T('x="265" y="284" fill="#F5F5F7" font-size="25" font-weight="700"',"Neurofunktionen","Neuro Functions")}
+       ${T('x="265" y="314" fill="#F5F5F7" font-size="25" font-weight="700"',"&amp; Struktur","&amp; Structure")}
+       <rect x="570" y="246" width="220" height="88" rx="44" fill="#F7B500"/>
+       ${T('x="680" y="301" fill="#14100A" font-size="31" font-weight="800"',"Aktivität","Activity")}
+       <rect x="940" y="250" width="310" height="80" rx="22" fill="#16213A" stroke="rgba(255,255,255,.18)"/>
+       ${T('x="1095" y="284" fill="#F5F5F7" font-size="25" font-weight="700"',"Verminderte","Decreased")}
+       ${T('x="1095" y="314" fill="#F5F5F7" font-size="25" font-weight="700"',"Teilhabe","Participation")}
+       ${T('x="480" y="556" fill="#F5F5F7" font-size="25" font-weight="700"',"Umweltfaktoren","Environmental Factors")}
+       ${T('x="880" y="556" fill="#F5F5F7" font-size="25" font-weight="700"',"Personenbezogene Faktoren","Personal Factors")}
+       ${T('x="680" y="594" fill="#F7B500" font-size="22" font-weight="700" letter-spacing="3"',"KONTEXTFAKTOREN","CONTEXTUAL FACTORS")}
+     </g>
+   </svg></div>` },
+
+ { ch:2, orig:"5", html: `
+   <div class="k">01 · ${L("Was ist das Gehirn?","What is the brain?")}</div>
+   <div class="h" style="font-size:56px">${L("Das menschliche Gehirn mit Bewusstsein und evolutionärer Entwicklung („Deep Learning“)","Human brain with consciousness and evolutionary development (‘deep learning’)")}</div>
+   <div class="row" style="align-items:center">
+     <div class="col" style="flex:.9;gap:28px">
+       <svg viewBox="0 0 560 300" width="560" height="300" aria-hidden="true">
+         <path d="M20 290 A260 260 0 0 1 540 290 Z" fill="#5AC8C8"/>
+         <path d="M110 290 A170 170 0 0 1 450 290 Z" fill="#FF8A3D"/>
+         <path d="M195 290 A85 85 0 0 1 365 290 Z" fill="#FFD23F"/>
+       </svg>
+       <div class="legend">
+         <div><i style="background:#5AC8C8"></i>${L("Das rationale (neue) Gehirn","The rational (new) brain")}</div>
+         <div><i style="background:#FF8A3D"></i>${L("Das emotionale (alte) Gehirn","The emotional (old) brain")}</div>
+         <div><i style="background:#FFD23F"></i>${L("Das Reptiliengehirn (alt)","The reptilian (old) brain")}</div>
+       </div>
+     </div>
+     <div class="col list">
+       <div>${L("Ständiges Neuverdrahten oder Abbauen","Constant re-wiring or deconstruction")}</div>
+       <div>${L("Integration von Aufgaben oder Delegation („KI“)","Integration of tasks or delegation (‘AI’)")}</div>
+       <div>${L("Das menschliche Gehirn hat Qualitäten, die es von anderen Tieren (und KI) unterscheiden","Human brain has qualities that differentiate from other animals (and AI)")}</div>
+     </div>
+   </div>` },
+
+ { ch:2, orig:"6", html: `
+   <div class="k">Brainwave Entrainment</div>
+   <div class="row" style="gap:40px">
+     <div class="col" style="flex:.55;justify-content:center">
+       <div style="font-size:34px;color:var(--st-muted)">${L("Unser Gehirn arbeitet in","Our brain works in")}</div>
+       <div class="tree">
+         <div class="t1">${L("Frequenzen","Frequencies")}</div><div class="t2">${L("Mustern","Patterns")}</div>
+         <div class="t1">${L("Biochemischen Funktionen","Biochemical functions")}</div><div class="t2">${L("Kreativem, unerwartetem Verhalten","Creative, unexpected behaviour")}</div>
+       </div>
+     </div>
+     <div class="col" style="flex-direction:row;gap:20px">
+       <div class="wave-lab">
+         <div><b style="color:#FF9F0A">Gamma</b><small>&gt; 30 Hz</small></div>
+         <div><b style="color:#D9D84A">Beta</b><small>13–30 Hz</small></div>
+         <div><b style="color:#5BD67C">Alpha</b><small>8–13 Hz</small></div>
+         <div><b style="color:#5AC8FA">Theta</b><small>4–8 Hz</small></div>
+         <div><b style="color:#7D9CFF">Delta</b><small>0,5–4 Hz</small></div>
+       </div>
+       <canvas id="waves" width="760" height="600" style="width:760px;height:600px;min-width:0"></canvas>
+     </div>
+   </div>` + LIVE("Wellen-Quiz","Wave quiz"),
+   enter(){ startWaves(); }, leave(){ stopWaves(); } },
+
+ { ch:2, orig:"7", html: `
+   <div class="k">02 · ${L("Wofür ist es da?","What is it for?")}</div>
+   <div class="row">
+     <div class="col" style="justify-content:center;flex:.8">
+       <div style="font-size:34px;font-weight:700">${L("Unser Gehirn kann:","Our brain is able to:")}</div>
+       <div class="words"><span>${L("Analysieren","Analyze")}</span><span>${L("Organisieren","Organize")}</span><span>${L("Reflektieren","Reflect")}</span><span>${L("Erinnern","Remember")}</span><span class="grad">${L("Erschaffen","Create")}</span></div>
+     </div>
+     <div class="col" style="justify-content:center">
+       <div class="k" style="font-size:18px">${L("Erst schätzen","Predict first")}</div>
+       <div class="h" style="font-size:52px">${L("Was passiert, wenn es unter 5 % oder weniger Fehlfunktion leidet?","What happens when it suffers of 5% or less of malfunction?")}</div>
+       <div class="hbars" id="prBars"></div>
+       <div style="font-size:22px;color:var(--st-muted)" id="prN"></div>
+     </div>
+   </div>` + LIVE("Prognose","Prediction"),
+   enter(){ hpoll([L("Merkt man kaum","Hardly noticeable"),L("Merkt man im Alltag","Noticeable every day"),L("Verändert alles","Changes everything")], [3,9,12], "prBars", "prN"); } },
+
+ { ch:3, orig:"8", html: `
+   <div class="chap">
+     <div class="num">${L("Kapitel 3","Chapter 3")}</div>
+     <div class="h" style="font-size:120px;max-width:11em">${L("Die Symptome einer <span class='grad'>Hirnfunktionsstörung</span>","The symptoms of <span class='grad'>brain dysfunction</span>")}</div>
+   </div>` },
+
+ { ch:3, orig:"9–10", html: `
+   <div class="k">${L("Sechs Phasen","Six phases")}</div>
+   <div class="phasebar" id="phBar"></div>
+   <div class="phdetail" id="phDetail"></div>` + LIVE("Phasen-Sortierer","Phase sorter"),
+   enter(){ buildPhases(); } },
+
+ { ch:3, html: `
+   <div class="row" style="align-items:center">
+     <div class="col" style="flex:1.3">
+       <div class="k">${L("Jetzt du","Your turn")}</div>
+       <div class="h">${L("Welche Signale kennst du von dir?","Which signals do you know from yourself?")}</div>
+       <p class="sub">${L("Die Signale aus allen sechs Phasen auf deinem Handy. Tipp an, was auf dich zutrifft.","The signals from all six phases on your phone. Tap what applies to you.")}</p>
+     </div>
+     <div class="col card" style="flex:1;gap:18px">
+       <svg width="64" height="64" viewBox="0 0 24 24" aria-hidden="true"><path fill="#F7B500" d="M12 1a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2h-1V6a5 5 0 0 0-5-5zm-3 8V6a3 3 0 0 1 6 0v3z"/></svg>
+       <div style="font-size:38px;font-weight:700;letter-spacing:-.02em;line-height:1.15">${L("Dein Ergebnis bleibt auf deinem Handy.","Your result stays on your phone.")}</div>
+       <div style="font-size:24px;color:var(--st-muted)">${L("Nichts davon erscheint auf der Leinwand. Punkte gibt es fürs Mitmachen, nie fürs Ergebnis.","None of it appears on screen. Points are for taking part, never for the result.")}</div>
+     </div>
+   </div>` + '<div class="live">' + L("Mitmachen · Selbstcheck","Join in · Self-check") + '</div>' },
+
+ { ch:4, orig:"11", html: `
+   <div class="statement"><div class="h">${L("Wir alle laufen Gefahr, mit unserem Gehirn (unseren Gehirnen) <span class='grad'>einzuschlafen.</span>","We are all in danger to fall asleep <span class='grad'>with our brain(s).</span>")}</div></div>` },
+
+ { ch:4, orig:"12", html: `
+   <div class="k">Brain fatigue …?</div>
+   <div class="chat" style="flex:none;margin-top:10px">
+     <div class="bub l">${L("Was ist das Gegenteil von „dormant“?<small>dormant = schlafend, ruhend</small>","What's the opposite of dormant?")}</div>
+   </div>
+   <div class="cloud" id="cloud" style="flex:1"></div>` + LIVE("Wortwolke","Word cloud"),
+   enter(){ buildCloud(); } },
+
+ { ch:4, orig:"13", html: `
+   <div class="chat">
+     <div class="bub l">${L("Was ist das Gegenteil von „dormant“?","What's the opposite of dormant?")}</div>
+     <div class="bub r">active, awake, lively, conscious, wakeful, alert, energetic, alive, busy, functioning<span class="l-de"><small>aktiv, wach, lebhaft, bewusst, wachsam, aufmerksam, energiegeladen, lebendig, beschäftigt, funktionierend</small></span></div>
+   </div>
+   <div style="display:flex;justify-content:space-between;align-items:flex-end">
+     <div class="h" style="font-size:110px"><span class="grad">${L("Smart und agil …","Smart and agile …")}</span></div>
+     <div style="text-align:right;font-size:24px;color:var(--st-muted)" id="hitN"></div>
+   </div>`,
+   enter(){ $("#hitN").innerHTML = demo ? L("<b style='color:#F5F5F7;font-size:56px'>17</b><br>Treffer aus dem Raum","<b style='color:#F5F5F7;font-size:56px'>17</b><br>matches from the room") : ""; } },
+
+ { ch:4, html: `
+   <div class="k">${L("Zwischenstand","Team standings")}</div>
+   <div class="h" style="font-size:64px">${L("Welches Team ist am wachsten?","Which team is most awake?")}</div>
+   <p class="sub" style="font-size:26px">${L("Punkte aus Wellen-Quiz, Phasen-Sortierer und Wortwolke. Im Team zusammen, gegeneinander um den Sieg.","Points from wave quiz, phase sorter and word cloud. Together inside a team, against each other for the win.")}</p>
+   <div class="hbars" id="tmBars" style="margin-top:10px"></div>` + '<div class="demo-chip" data-demochip></div>',
+   enter(){ teams("tmBars", [212,268,241,190,226]); } },
+
+ { ch:4, orig:"14", html: `
+   
+   <div class="h xl" style="font-size:130px">${L("Was tun?","What to do?")}</div>
+   <div class="loopbox">
+     <div class="step"><b>1</b><span>${L("Testen","Test")}</span></div><div class="arrow">→</div>
+     <div class="step"><b>2</b><span>${L("Fragebögen","Questionnaires")}</span></div><div class="arrow">→</div>
+     <div class="step"><b>3</b><span>${L("Entscheiden","Decide")}</span></div><div class="arrow">→</div>
+     <div class="step"><b>4</b><span>${L("Handeln","Act")}</span></div><div class="arrow">→</div>
+     <div class="step"><b>↻</b><span>${L("… und weitermachen","… and continue")}</span></div>
+   </div>` },
+
+ { ch:5, orig:"15", html: `
+   <div class="row" style="align-items:center;gap:90px">
+     <div class="col">
+       <div class="h" style="font-size:66px">${L("Was passiert in deinem Körper?","What is happening in your body?")}</div>
+       <div class="plus">
+         <div><span>+</span>${L("Bewegen","Move")}</div>
+         <div><span>+</span>${L("Futter fürs Denken","Food for thought")}</div>
+         <div><span>+</span>${L("Gedanken fürs Essen","Thought for food")}</div>
+         <div><span>+</span>${L("Reflektieren","Reflect")}</div>
+         <div><span>+</span>${L("Messen","Measure")}</div>
+         <div><span>+</span>${L("Keine Panik","Don’t panic")}</div>
+       </div>
+     </div>
+     <div class="watch"><svg viewBox="0 0 200 200" width="220" height="220" aria-hidden="true">
+       <g fill="none" stroke-linecap="round" stroke-width="18" transform="rotate(-90 100 100)">
+         <circle cx="100" cy="100" r="80" stroke="rgba(250,17,79,.25)"/><circle id="r1" cx="100" cy="100" r="80" stroke="#FA114F" stroke-dasharray="502.7" stroke-dashoffset="502.7" style="transition:stroke-dashoffset 1.6s cubic-bezier(.2,.7,.2,1)"/>
+         <circle cx="100" cy="100" r="58" stroke="rgba(146,232,42,.25)"/><circle id="r2" cx="100" cy="100" r="58" stroke="#92E82A" stroke-dasharray="364.4" stroke-dashoffset="364.4" style="transition:stroke-dashoffset 1.6s .2s cubic-bezier(.2,.7,.2,1)"/>
+         <circle cx="100" cy="100" r="36" stroke="rgba(30,234,239,.25)"/><circle id="r3" cx="100" cy="100" r="36" stroke="#1EEAEF" stroke-dasharray="226.2" stroke-dashoffset="226.2" style="transition:stroke-dashoffset 1.6s .4s cubic-bezier(.2,.7,.2,1)"/>
+       </g></svg></div>
+   </div>`,
+   enter(){ timers.push(setTimeout(() => { $("#r1").style.strokeDashoffset = 502.7*.22; $("#r2").style.strokeDashoffset = 364.4*.35; $("#r3").style.strokeDashoffset = 226.2*.1; }, 200)); },
+   leave(){ ["r1","r2","r3"].forEach((id,i) => $("#"+id).style.strokeDashoffset = [502.7,364.4,226.2][i]); } },
+
+ { ch:5, orig:"16", html: `
+   <div class="h" style="font-size:72px">Bio-Feedback?!</div>
+   <div class="health">
+     <div class="hk"><div class="cat" style="color:#FF375F"><i style="background:#FF375F"></i>Ø-Herzfrequenz (Gehen)</div><div class="lbl">Durchschnitt</div><div class="val">91<small>BPM</small></div><div class="rng">3. Jan. – 2. Feb. 2025</div>${spark([99,88,91,95,84,98,94,91,91,89,78,91,84,95,93,87,98,89,93,93,101,89,75,104,85],"#FF375F",48)}</div>
+     <div class="hk"><div class="cat" style="color:#FF9F0A"><i style="background:#FF9F0A"></i>Ruheenergie</div><div class="lbl">Durchschnitt</div><div class="val">1.708<small>kcal</small></div><div class="rng">28. Jan. – 3. Feb. 2025</div></div>
+     <div class="hk"><div class="cat" style="color:#FF9F0A"><i style="background:#FF9F0A"></i>Gehtempo</div><div class="lbl">Bereich</div><div class="val">1,9–6,8<small>km/h</small></div><div class="rng">2. Jan. – 1. Feb. 2025 · Zuletzt: 1. Feb. 3,5 km/h</div></div>
+     <div class="hk"><div class="cat" style="color:#FF9F0A"><i style="background:#FF9F0A"></i>Treppensteigen</div><div class="lbl">Durchschnitt</div><div class="val">9<small>Stockwerke</small></div><div class="rng">3. Jan. – 2. Feb. 2025</div><div class="txt">Die Treppe eines Stockwerks wird mit etwa 3 Meter Höhenunterschied (ca. 16 Stufen) berechnet.</div></div>
+   </div>
+   <div class="foot">${L("Alexanders eigene Werte aus Apple Health.","Alexander's own Apple Health data.")}</div>` },
+
+ { ch:5, orig:"17", html: `
+   <div class="h" style="font-size:72px">${L("Du hast einen Freund …","You have a friend …")}</div>
+   <div class="health">
+     <div class="hk"><div class="cat" style="color:#5AC8FA"><i style="background:#5AC8FA"></i>Schlafphase</div><div class="val">7<small>Std.</small> 54<small>Min.</small></div><div class="rng">3. Feb. 2025</div><div class="txt"><b>Atemstörungen</b> · In den letzten sieben Tagen hattest du keine erhöhte Anzahl von Atmungsstörungen.</div></div>
+     <div class="hk"><div class="lbl">Durchschnitt</div><div class="val">107<small>Min.</small></div><div class="rng">27. Jan. – 2. Feb. 2025</div>${wbars([95,150,65,85,120,175,68],["Mo","Di","Mi","Do","Fr","Sa","So"])}</div>
+     <div class="hk"><div class="cat" style="color:#FF9F0A"><i style="background:#FF9F0A"></i>Stabilität beim Gehen</div><div class="lbl">Stufe</div><div class="val">OK</div><div class="rng">Jan. 2025</div></div>
+     <div class="hk"><div class="cat" style="color:#FF375F"><i style="background:#FF375F"></i>Herzfrequenzvariabilität</div><div class="lbl">Durchschnitt</div><div class="val">26<small>ms</small></div><div class="rng">4. Jan. – 3. Feb. 2025</div>${spark([18,16,19,22,20,35,33,28,25,22,24,20,26,22,27,24,25,61,27,29,26,34,25,24,27,23,21,32],"#FF375F",48)}</div>
+   </div>
+   <div class="foot">${L("Werte aus Alexanders Apple Health.","Values from Alexander's Apple Health.")}</div>` },
+
+ { ch:6, orig:"18", html: `
+   <div class="k">${L("Umkehren","Turn around")}</div>
+   <div class="h" style="font-size:62px">${L("Umkehren – reflektieren und ändern, was nicht funktioniert","Turn around – Reflect and change what is not working")}</div>
+   <div class="sys">
+     <div class="card"><b>${L("Glaubenssystem","Belief system")}</b><span>${L("„Erinnerung in der Luft“","‘Memory in the air’")}</span></div>
+     <div class="card"><b>${L("Körpersystem","Physical system")}</b><span>${L("„Setze deine Stressreaktion zurück“","‘Re-set your stress response’")}</span></div>
+     <div class="card"><b>${L("Soziales Netzwerk","Social network")}</b><div class="qs"><div>${L("Bist du einsam?","Are you lonely?")}</div><div>${L("Neigst du zu Angst?","Are you prone to anxiety?")}</div><div>${L("Besteht bei dir das Risiko einer schweren Depression?","Are you in risk of severe depression?")}</div></div></div>
+   </div>` },
+
+ { ch:6, html: `
+   <div class="k">${L("Team-Quest · Soziales Netzwerk","Team quest · Social network")}</div>
+   <div class="row">
+     <div class="col" style="justify-content:center;flex:1.2">
+       <div class="h">${L("Drei Minuten.<br>Ein anderes Team.<br><span class='grad'>Eine Frage.</span>","Three minutes.<br>Another team.<br><span class='grad'>One question.</span>")}</div>
+       <p class="sub">${L("Was hält in deinem Studio die Köpfe wach? Such dir jemanden aus einem anderen Wellen-Team. Danach tauscht ihr eure Visitenkarten: +10 für beide.","What keeps minds awake in your studio? Find someone from another wave team. Then swap business cards: +10 for both.")}</p>
+     </div>
+     <div class="col" style="justify-content:center;align-items:flex-start">
+       <div class="timer" id="netT">3:00</div>
+       <button class="btn-st" id="netBtn"></button>
+     </div>
+   </div>` + LIVE("Visitenkarte","Business card"),
+   enter(){ timer("netT","netBtn",180,["Austausch starten","Start exchange"]); } },
+
+ { ch:6, orig:"19", html: `
+   <div class="statement" style="align-items:center;text-align:center"><div class="h" style="font-size:150px"><span class="grad">${L("Du bist der Fall!","You are the case!")}</span></div></div>` },
+
+ { ch:6, orig:"20", html: `
+   <div class="row" style="gap:60px">
+     <div class="col" style="flex:.7;justify-content:space-between">
+       <div class="iam"><span>${L("Ich bin …","I am …")}</span><br><span>${L("Ich fühle …","I feel …")}</span><br><span>${L("Ich habe …","I have …")}</span></div>
+       <div><div class="timer s" id="hrT">0:30</div><button class="btn-st" id="hrBtn" style="margin-top:12px"></button></div>
+     </div>
+     <div class="col tasks" style="justify-content:center">
+       <div><b>1.</b><span>${L("Schreib deine Überzeugungen über dich als Person auf","Write down your beliefs about yourself as a person")}</span></div>
+       <div><b>2.</b><span>${L("Welche Erinnerung belastet dich?","Which memory burdens you?")}</span></div>
+       <span class="gap"></span>
+       <div><b>3.</b><span>${L("Fühl deine Herzfrequenz / deinen Herzschlag","Feel your heartrate/heart beat")}</span></div>
+       <div><b>4.</b><span>${L("Weitere körperliche Messwerte","Other physical measures")}</span></div>
+       <span class="gap"></span>
+       <div><b>5.</b><span>${L("Daten über deinen emotionalen Zustand?","Data about your emotional status?")}</span></div>
+       <div><b>6.</b><span>${L("Emotionale Geschichte? Wie viele glückliche Momente in letzter Zeit?","Emotional history? How many happy moments recently?")}</span></div>
+     </div>
+   </div>` + LIVE("Du bist der Fall","You are the case"),
+   enter(){ timer("hrT","hrBtn",30,["Puls: 30 Sek. starten","Pulse: start 30 sec"]); } },
+
+ { ch:6, orig:"21", html: `
+   <div class="row" style="align-items:center">
+     <div class="col pact" style="flex:1.1">
+       <div>${L("Körperlicher Aktivitätsplan","Physical activity plan")}</div>
+       <div>${L("Mentaler Aktivitätsplan","Mental activity plan")}</div>
+       <div>${L("Emotionaler Aktivitätsplan","Emotional activity plan")}</div>
+     </div>
+     <div class="col" style="gap:20px">
+       <div class="k">${L("Die 14-Tage-Wach-Challenge","The 14-day wake-up challenge")}</div>
+       <p class="sub" style="font-size:26px">${L("Jeden Tag ein Haken auf dem Handy, wenn du deinen Plan umgesetzt hast. Nach 14 Tagen fragt Alexander nach.","Tick a box on your phone each day you follow your plan. After 14 days Alexander checks in.")}</p>
+       <div class="chal" id="chal"></div>
+     </div>
+   </div>` + LIVE("Mein Plan","My plan"),
+   enter(){ const c = $("#chal"); c.innerHTML = Array.from({length:14}, (_,i) => '<i>' + (i+1) + '</i>').join(""); const cells = $$("i", c); cells.forEach((el,i) => { if (i < 9) timers.push(setTimeout(() => el.classList.add("on"), REDUCE ? 0 : 400 + i*160)); }); } },
+
+ { ch:6, orig:"22", html: `
+   <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:30px">
+     <div class="h xl" style="font-size:170px">Love what<br><span class="grad">you do.</span></div>
+     <p class="sub" id="finTxt"></p>
+   </div>
+   <div style="display:flex;justify-content:space-between;align-items:flex-end;font-size:24px">
+     <div style="display:flex;align-items:center;gap:30px"><img src="${LOGO.eu}" alt="Polestar Europe" style="height:150px;width:auto;filter:drop-shadow(0 10px 30px rgba(0,0,0,.45))"><div style="display:flex;flex-direction:column;gap:8px"><img src="${LOGO.wm}" alt="Polestar" style="height:120px;width:auto;margin-left:-10px;align-self:flex-start"><span style="color:var(--st-muted)">Polestar Pilates · Alexander Bohlander · polestarpilates.de</span></div></div>
+     <div class="qrstage" data-qr="192" style="width:200px;height:200px"></div>
+   </div>`,
+   enter(){ $("#finTxt").innerHTML = demo ? L("Mission erfüllt: Das Gehirn im Raum ist <b style='color:#F7B500'>smart &amp; agil</b>. Siegerteam: <b style='color:#5AC8FA'>Theta</b>. Dein Takeaway liegt auf deinem Handy.","Mission complete: the brain in the room is <b style='color:#F7B500'>smart &amp; agile</b>. Winning team: <b style='color:#5AC8FA'>Theta</b>. Your takeaway is on your phone.") : L("Dein Takeaway liegt auf deinem Handy.","Your takeaway is on your phone."); } }
+];
+
+function spark(vals, color, h){
+  const w = 300, mn = Math.min(...vals), mx = Math.max(...vals);
+  const pts = vals.map((v,i) => (i*(w-8)/(vals.length-1)+4).toFixed(1) + "," + (h-6-(v-mn)/(mx-mn||1)*(h-12)).toFixed(1)).join(" ");
+  return '<svg viewBox="0 0 '+w+' '+h+'" width="100%" height="'+h+'" preserveAspectRatio="none" aria-hidden="true"><polyline points="'+pts+'" fill="none" stroke="'+color+'" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/></svg>';
+}
+function wbars(vals, labels){
+  const mx = Math.max(...vals), w = 300, h = 70, bw = 26, gap = (w - bw*vals.length)/(vals.length-1);
+  return '<svg viewBox="0 0 '+w+' '+(h+20)+'" width="100%" height="'+(h+20)+'" aria-hidden="true">' + vals.map((v,i) => { const bh = v/mx*h; const x = i*(bw+gap); return '<rect x="'+x+'" y="'+(h-bh)+'" width="'+bw+'" height="'+bh+'" rx="4" fill="#FF3B30"/><text x="'+(x+bw/2)+'" y="'+(h+17)+'" fill="#8E8E93" font-size="13" text-anchor="middle" font-family="-apple-system,Helvetica,Arial">'+labels[i]+'</text>'; }).join("") + '</svg>';
+}
+
+/* ---------- Bühne: Engine ---------- */
+const deck = $("#deck"), wrap = $("#stagewrap");
+let cur = 0, demo = true, timers = [], lastCh = 0;
+deck.innerHTML = '<div class="chrome"><img src="' + LOGO.wm + '" alt="Polestar"><span>The Sleeping Brain</span></div>'
+  + '<div class="hud"><div class="chd" id="chd"></div><div class="meter"><span>' + L("Gehirn-Meter","Brain meter") + '</span><div class="mb"><i id="mb"></i></div><b id="mp">–</b><em id="ml"></em></div></div>'
+  + '<div class="toast" id="toast"></div>'
+  + SLIDES.map((s,i) => '<div class="slide" data-i="'+i+'" aria-hidden="true">'+s.html+'</div>').join("");
+const els = $$(".slide", deck);
+$$("[data-qr]").forEach(makeQR);
+
+function fit(){
+  const w = wrap.clientWidth, h = wrap.clientHeight; if (!w || !h) return;
+  const s = Math.min(w/1600, h/900);
+  deck.style.transform = "translate(" + (w-1600*s)/2 + "px," + (h-900*s)/2 + "px) scale(" + s + ")";
+}
+addEventListener("resize", fit);
+function clearTimers(){ timers.forEach(t => { clearInterval(t); clearTimeout(t); }); timers = []; }
+function meterFor(i){ return Math.round(6 + 94 * i / (SLIDES.length - 1)); }
+function hud(i){
+  const ch = SLIDES[i].ch;
+  $("#chd").innerHTML = CHAPTERS.map((c,k) => '<i class="'+(k===ch?"cur":k<ch?"done":"")+'"></i>').join("") + '<span>' + L(CHAPTERS[ch][0], CHAPTERS[ch][1]) + '</span>';
+  if (demo){ const m = meterFor(i), lv = Math.min(4, Math.floor(m/20.01)); $("#mb").style.width = m + "%"; $("#mp").textContent = m + " %"; $("#ml").innerHTML = L(LEVELS[lv][1], LEVELS[lv][2]); }
+  else { $("#mb").style.width = "0%"; $("#mp").textContent = "–"; $("#ml").innerHTML = ""; }
+  if (ch > lastCh && demo){
+    const t = $("#toast"); t.innerHTML = "✦ " + L("Kapitel geschafft · weiter zu „" + CHAPTERS[ch][0] + "“", "Chapter cleared · on to “" + CHAPTERS[ch][1] + "”");
+    t.classList.add("on"); timers.push(setTimeout(() => t.classList.remove("on"), 2600));
+  }
+  lastCh = ch;
+}
+function go(i, force){
+  i = Math.max(0, Math.min(SLIDES.length-1, i));
+  if (i === cur && !force) return;
+  if (SLIDES[cur].leave) SLIDES[cur].leave();
+  clearTimers();
+  $("#toast").classList.remove("on");
+  els.forEach((el,k) => { el.classList.toggle("on", k === i); el.setAttribute("aria-hidden", k === i ? "false" : "true"); });
+  cur = i;
+  $("#count").textContent = (i+1) + " / " + SLIDES.length;
+  $("#prog").style.width = ((i+1)/SLIDES.length*100) + "%";
+  $$("[data-demochip]", els[i]).forEach(d => d.textContent = demo ? "Demo" : "");
+  hud(i);
+  if (SLIDES[i].enter) SLIDES[i].enter();
+}
+$("#prev").onclick = () => go(cur-1);
+$("#next").onclick = () => go(cur+1);
+$("#demo").onclick = e => { demo = !demo; e.currentTarget.setAttribute("aria-pressed", demo); go(cur, true); };
+$("#langBtn").onclick = () => { setLang(lang === "de" ? "en" : "de"); go(cur, true); };
+$("#fs").onclick = () => { const el = $("#v-buehne"); try { (document.fullscreenElement ? document.exitFullscreen() : el.requestFullscreen()).catch(()=>{}); } catch(e){} };
+document.addEventListener("fullscreenchange", () => setTimeout(fit, 60));
+addEventListener("keydown", e => {
+  if (document.documentElement.dataset.view !== "buehne") return;
+  if (e.target.closest("input,textarea")) return;
+  if (["ArrowRight","PageDown"," "].includes(e.key)){ e.preventDefault(); go(cur+1); }
+  else if (["ArrowLeft","PageUp"].includes(e.key)){ e.preventDefault(); go(cur-1); }
+  else if (e.key === "f" || e.key === "F") $("#fs").click();
+  else if (e.key === "l" || e.key === "L") $("#langBtn").click();
+  else if (e.key === "Home") go(0);
+  else if (e.key === "End") go(SLIDES.length-1);
+});
+
+function trickle(target, onTick, dur = 4200){
+  const counts = target.map(() => 0);
+  if (!demo){ onTick(counts); return; }
+  if (REDUCE){ onTick(target.slice()); return; }
+  const queue = []; target.forEach((n,i) => { for (let k=0;k<n;k++) queue.push(i); });
+  for (let i = queue.length-1; i > 0; i--){ const j = Math.floor(Math.random()*(i+1)); [queue[i],queue[j]] = [queue[j],queue[i]]; }
+  onTick(counts);
+  const t = setInterval(() => { if (!queue.length){ clearInterval(t); return; } counts[queue.shift()]++; onTick(counts.slice()); }, Math.max(60, dur/queue.length));
+  timers.push(t);
+}
+function poll(labels, target, boxId, extra){
+  const box = $("#"+boxId);
+  box.innerHTML = labels.map(l => '<div class="bar"><div class="n">0</div><div class="f" style="height:0%"></div><div class="l">'+l+'</div></div>').join("");
+  const bars = $$(".bar", box);
+  trickle(target, c => { const mx = Math.max(1, ...c); bars.forEach((b,i) => { $(".f",b).style.height = (c[i]/mx*78) + "%"; $(".n",b).textContent = c[i]; }); if (extra) extra(c); });
+}
+function hpoll(labels, target, boxId, nId){
+  const box = $("#"+boxId);
+  box.innerHTML = labels.map(l => '<div class="hb"><span>'+l+'</span><div class="t"><div style="width:0%"></div></div><span class="p">0 %</span></div>').join("");
+  const rows = $$(".hb", box);
+  trickle(target, c => { const n = c.reduce((a,b)=>a+b,0); rows.forEach((r,i) => { const p = n ? Math.round(c[i]/n*100) : 0; $(".t>div",r).style.width = p + "%"; $(".p",r).textContent = p + " %"; });
+    $("#"+nId).innerHTML = n ? L(n + " Antworten", n + " answers") : L("Warte auf Antworten …","Waiting for answers …"); });
+}
+function teams(boxId, pts){
+  const box = $("#"+boxId);
+  box.innerHTML = TEAMS.map(([n,c]) => '<div class="hb" style="grid-template-columns:200px 1fr 110px"><span style="color:'+c+';font-weight:700">'+n+'</span><div class="t"><div style="width:0%;background:'+c+'"></div></div><span class="p">0</span></div>').join("");
+  const rows = $$(".hb", box), mx = Math.max(...pts);
+  if (!demo){ $$(".p", box).forEach(p => p.textContent = "–"); return; }
+  timers.push(setTimeout(() => rows.forEach((r,i) => { $(".t>div",r).style.width = (pts[i]/mx*100) + "%"; $(".p",r).textContent = pts[i]; }), 250));
+}
+function timer(tId, bId, secs, label){
+  const Tm = $("#"+tId), B = $("#"+bId);
+  const fmt = s => Math.floor(s/60) + ":" + String(s%60).padStart(2,"0");
+  let left = secs, run = null;
+  const lab = () => L(label[0], label[1]);
+  Tm.textContent = fmt(left); B.innerHTML = lab();
+  B.onclick = () => {
+    if (run){ clearInterval(run); run = null; left = secs; Tm.textContent = fmt(left); B.innerHTML = lab(); return; }
+    B.innerHTML = L("Zurücksetzen","Reset");
+    run = setInterval(() => { left--; Tm.textContent = fmt(Math.max(0,left)); if (left <= 0){ clearInterval(run); run = null; Tm.innerHTML = L("Fertig","Done"); B.innerHTML = lab(); left = secs; } }, 1000);
+    timers.push(run);
+  };
+}
+function buildPhases(){
+  const bar = $("#phBar"), det = $("#phDetail");
+  bar.innerHTML = PHASES.map((p,i) => '<button class="ph" data-p="'+i+'"><b>Phase '+p.n+'</b><small>'+(p.tag ? L(p.tag[0], p.tag[1]) : "&nbsp;")+'</small><span class="lvl"><i style="width:'+p.lvl+'%"></i></span></button>').join("");
+  const show = i => {
+    $$(".ph", bar).forEach((b,k) => b.classList.toggle("on", k === i));
+    const p = PHASES[i];
+    det.innerHTML = '<div><div class="ttl">Phase '+p.n+'</div>'+(p.tag ? '<div class="tag">'+L(p.tag[0], p.tag[1])+'</div>' : '')+'</div><div class="sym">'+p.items.map(([n,de,en]) => '<div><b>'+n+'.</b><span>'+L(de,en)+'</span></div>').join("")+'</div>';
+  };
+  $$(".ph", bar).forEach(b => b.onclick = () => show(+b.dataset.p));
+  show(0);
+}
+function buildCloud(){
+  const words = lang === "en"
+    ? [["awake",9],["active",8],["alive",7],["curious",6],["present",5],["alert",5],["creative",4],["energetic",4],["lively",4],["focused",3],["connected",3],["open",2]]
+    : [["wach",9],["aktiv",8],["lebendig",7],["neugierig",6],["präsent",5],["aufmerksam",5],["kreativ",4],["energiegeladen",4],["beweglich",4],["fokussiert",3],["verbunden",3],["offen",2]];
+  const cloud = $("#cloud");
+  const order = demo ? words.slice().sort(() => Math.random() - .5) : [];
+  const colors = ["#F5F5F7","#FFD866","#9DBAD6","#F7B500","#F5F5F7"];
+  cloud.innerHTML = order.length ? order.map(([w,n],i) => '<span class="'+(OPPOSITE.includes(w)?"hit":"")+'" style="font-size:'+(30+n*9)+'px;color:'+colors[i%colors.length]+'">'+esc(w)+'</span>').join("") : '<span class="in empty">' + L("Hier erscheinen die Wörter aus dem Raum.","Words from the room appear here.") + '</span>';
+  $$("span", cloud).forEach((s,i) => timers.push(setTimeout(() => s.classList.add("in"), REDUCE ? 0 : 300 + i*280)));
+}
+let raf = null;
+function startWaves(){
+  const cv = $("#waves"), ctx = cv.getContext("2d");
+  const rows = [["#FF9F0A",22],["#D9D84A",12],["#5BD67C",6],["#5AC8FA",3.5],["#7D9CFF",1.4]];
+  const W = cv.width, H = cv.height, rh = H/rows.length, t0 = performance.now();
+  const draw = now => {
+    const t = (now - t0)/1000;
+    ctx.clearRect(0,0,W,H);
+    rows.forEach(([c,f],r) => {
+      const y0 = rh*r + rh/2;
+      ctx.beginPath(); ctx.lineWidth = 3; ctx.strokeStyle = c; ctx.lineJoin = "round";
+      for (let x = 0; x <= W; x += 2){
+        const noise = r < 2 ? 1 + Math.sin(x*.37 + t*9)*.25 + Math.sin(x*.11 - t*4)*.2 : 1;
+        const y = y0 + Math.sin((x/W*f)*Math.PI*2 - t*(1.2 + f*.1)) * rh*.3 * noise;
+        x ? ctx.lineTo(x,y) : ctx.moveTo(x,y);
+      }
+      ctx.stroke();
+    });
+    if (!REDUCE) raf = requestAnimationFrame(draw);
+  };
+  stopWaves(); raf = requestAnimationFrame(draw);
+}
+function stopWaves(){ if (raf) cancelAnimationFrame(raf); raf = null; }
+
+/* ---------- Übersicht: Zuordnungstabelle ---------- */
+(function(){
+  const rows = [
+    ["1","Titel","Title","1","Missionsstart mit QR-Code","Mission start with QR code"],
+    ["–","","","2","Neu: Check-in startet das Gehirn-Meter","New: check-in starts the brain meter"],
+    ["2","Kursziele","Course objectives","3","Fünf Fragen als Quest","Five questions as a quest"],
+    ["3","Symptomverlauf als Zeitachse","Symptom timeline","4","These mit animierter Zeitachse","Thesis with animated timeline"],
+    ["4","Modell (Aktivität, Teilhabe, Kontext)","Model (activity, participation, context)","5","Neu gezeichnetes Diagramm","Redrawn diagram"],
+    ["5","Menschliches Gehirn, drei Ebenen","Human brain, three levels","6","Grafik und Kernsätze","Graphic and key statements"],
+    ["6","Frequenzen und Biochemie","Frequencies and biochemistry","7","Animierte Wellen + Wellen-Quiz","Animated waves + wave quiz"],
+    ["7","Fähigkeiten, 5 % Fehlfunktion","Abilities, 5% malfunction","8","Prognose vor der Antwort","Prediction before the answer"],
+    ["8","Kapitel: Symptome","Chapter: symptoms","9","Kapitelkarte","Chapter card"],
+    ["9–10","Sechs Phasen, Symptome 1–20","Six phases, symptoms 1–20","10","Klickbare Phasen + Phasen-Sortierer","Clickable phases + phase sorter"],
+    ["–","","","11","Neu: privater Selbstcheck","New: private self-check"],
+    ["11","Wir alle laufen Gefahr …","We are all in danger …","12","Statement","Statement"],
+    ["12","Brain fatigue, Gegenteil von dormant","Brain fatigue, opposite of dormant","13","Chat-Frage + Wortwolke","Chat question + word cloud"],
+    ["13","Smart und agil","Smart and agile","14","Auflösung + Treffer","Answer + matches"],
+    ["–","","","15","Neu: Team-Zwischenstand","New: team standings"],
+    ["14","Was tun?","What to do?","16","Kreislauf in fünf Schritten","Five-step loop"],
+    ["15","Was passiert in deinem Körper?","What is happening in your body?","17","Liste + Aktivitätsringe","List + activity rings"],
+    ["16","Bio-Feedback (Health-Daten)","Bio-feedback (health data)","18","Health-Kacheln","Health tiles"],
+    ["17","Du hast einen Freund (Health-Daten)","You have a friend (health data)","19","Health-Kacheln","Health tiles"],
+    ["18","Umkehren: drei Systeme","Turn around: three systems","20","Drei Karten","Three cards"],
+    ["–","","","21","Neu: Netzwerk-Quest (3 Minuten)","New: network quest (3 minutes)"],
+    ["19","Du bist der Fall!","You are the case!","22","Statement","Statement"],
+    ["20","Ich bin, ich fühle, ich habe (6 Aufgaben)","I am, I feel, I have (6 tasks)","23","Aufgaben + Puls-Timer + Handy-Station","Tasks + pulse timer + phone station"],
+    ["21","Drei Aktivitätspläne","Three activity plans","24","Pläne + 14-Tage-Challenge","Plans + 14-day challenge"],
+    ["22","Love what you do","Love what you do","25","Finale mit Missionsergebnis","Finale with mission result"]
+  ];
+  const mb = $("#mapBody"); if (mb) mb.innerHTML = rows.map(r => '<tr class="'+(r[0]==="–"?"new":"")+'"><td>'+r[0]+'</td><td>'+(r[1]?L(r[1],r[2]):"–")+'</td><td>'+r[3]+'</td><td>'+L(r[4],r[5])+'</td></tr>').join("");
+})();
+
+/* ---------- Mitmachen ---------- */
+const KEY = "sleeping-brain-v2";
+let S = {};
+try { S = JSON.parse(store(KEY) || "{}") || {}; } catch(e){ S = {}; }
+function norm(){ S.words = S.words || []; S.sym = S.sym || {}; S.plan = S.plan || {}; S.card = S.card || {}; S.quiz = S.quiz || {}; S.sort = S.sort || {}; S.cs = S.cs || {}; S.chal = S.chal || {on:false, days:[]}; }
+norm();
+let si = 0;
+const SORT_SEQ = [13,3,18,7,15,4];
+const QUIZ = [
+  {q:["Welche Frequenz ist die langsamste?","Which frequency is the slowest?"], a:4},
+  {q:["Welche Frequenz ist die schnellste?","Which frequency is the fastest?"], a:0}
+];
+const WAVES = ["Gamma","Beta","Alpha","Theta","Delta"];
+const filled = v => v !== undefined && v !== null && String(v).trim() !== "";
+function xpParts(){
+  const p = [];
+  p.push(S.team != null ? 5 : 0);
+  p.push(S.wach ? 10 : 0);
+  p.push(S.prog != null ? 10 : 0);
+  p.push(QUIZ.reduce((a,q,i) => a + (S.quiz[i] == null ? 0 : S.quiz[i] === q.a ? 10 : 3), 0));
+  p.push(SORT_SEQ.reduce((a,no) => { const s = SYMPTOMS.find(x => x.no === no); return a + (S.sort[no] == null ? 0 : S.sort[no] === s.pi ? 5 : 1); }, 0));
+  p.push(S.selfDone ? 10 : 0);
+  p.push(S.words.length * 2 + (S.reveal ? S.words.filter(w => OPPOSITE.includes(w.toLowerCase())).length * 5 : 0));
+  p.push(["c1","c2","pulse","c4","mood","happy"].filter(k => filled(S.cs[k])).length * 5);
+  p.push(["koerper","mental","emotional"].filter(k => filled(S.plan[k])).length * 4 + (S.chal.on ? 10 : 0) + S.chal.days.filter(Boolean).length * 2);
+  p.push(filled(S.card.name) && filled(S.card.studio) ? 10 : 0);
+  return p;
+}
+const xp = () => xpParts().reduce((a,b) => a+b, 0);
+let lastLv = levelOf(xp()), toastT = null;
+function ptoast(html, lv){ const t = $("#ptoast"); t.innerHTML = html; t.classList.toggle("lv", !!lv); t.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("on"), 1900); }
+function save(){
+  store(KEY, JSON.stringify(S));
+  const x = xp(), lv = levelOf(x);
+  if (lv > lastLv) ptoast("✦ Level up: " + L(LEVELS[lv][1], LEVELS[lv][2]), true);
+  lastLv = lv; renderXP();
+}
+function renderXP(){
+  const x = xp(), lv = levelOf(x), nxt = LEVELS[lv+1];
+  const pct = nxt ? (x - LEVELS[lv][0]) / (nxt[0] - LEVELS[lv][0]) * 100 : 100;
+  $("#xp").innerHTML = '<b>' + x + ' XP</b><em>' + L(LEVELS[lv][1], LEVELS[lv][2]) + '</em><div class="xb"><i style="width:' + pct + '%"></i></div><span>' + (nxt ? L("nächstes: " + nxt[1], "next: " + nxt[2]) : "max") + '</span>' + (S.team != null ? '<span style="color:' + TEAMS[S.team][1] + '">' + TEAMS[S.team][0] + '</span>' : "");
+}
+const STATIONS = [
+ { name:["Team","Team"], done: () => S.team != null, render: () => `
+   <div class="st-k">${L("Mission","Mission")}</div><h2 class="st-h">${L("Weck das schlafende Gehirn. Wähl dein Wellen-Team.","Wake the sleeping brain. Pick your wave team.")}</h2>
+   <p class="st-p">${L("Am besten das Team deines Tisches. Ihr spielt zusammen und gegen die anderen Teams.","Ideally your table's team. You play together and against the other teams.")}</p>
+   <div class="opt g5" id="tmOpt">${TEAMS.map(([n,c],i) => '<button aria-pressed="'+(S.team===i)+'" data-i="'+i+'" style="color:'+c+'">'+n+'</button>').join("")}</div>`,
+   bind(){ $$("#tmOpt button").forEach(b => b.onclick = () => { S.team = +b.dataset.i; $$("#tmOpt button").forEach(x => x.setAttribute("aria-pressed", x === b)); save(); }); } },
+ { name:["Check-in","Check-in"], done: () => !!S.wach, render: () => `
+   <div class="st-k">Check-in · +10 XP</div><h2 class="st-h">${L("Wie wach ist dein Gehirn gerade?","How awake is your brain right now?")}</h2>
+   <div class="res" style="gap:14px"><div class="bignum" id="wachN">${S.wach ?? "–"}</div>
+   <input class="rng" id="wach" type="range" min="1" max="10" step="1" value="${S.wach ?? 5}" aria-label="1–10">
+   <div class="scale-l"><span>${L("1 · schlafe gleich ein","1 · about to fall asleep")}</span><span>${L("10 · hellwach","10 · wide awake")}</span></div></div>`,
+   bind(){ const r = $("#wach"); r.oninput = () => { $("#wachN").textContent = r.value; S.wach = +r.value; save(); }; } },
+ { name:["Prognose","Prediction"], done: () => S.prog != null, render: () => `
+   <div class="st-k">${L("Prognose","Prediction")} · +10 XP</div><h2 class="st-h">${L("Was passiert, wenn das Gehirn unter 5 % oder weniger Fehlfunktion leidet?","What happens when the brain suffers of 5% or less of malfunction?")}</h2>
+   <p class="st-p">${L("Schätz zuerst. Die Antwort gibt Alexander.","Guess first. Alexander gives the answer.")}</p>
+   <div class="opt" id="prOpt">${[["Merkt man kaum","Hardly noticeable"],["Merkt man im Alltag","Noticeable every day"],["Verändert alles","Changes everything"]].map((o,i)=>'<button aria-pressed="'+(S.prog===i)+'" data-i="'+i+'">'+L(o[0],o[1])+'</button>').join("")}</div>`,
+   bind(){ $$("#prOpt button").forEach(b => b.onclick = () => { S.prog = +b.dataset.i; $$("#prOpt button").forEach(x => x.setAttribute("aria-pressed", x === b)); save(); }); } },
+ { name:["Wellen-Quiz","Wave quiz"], done: () => QUIZ.every((q,i) => S.quiz[i] != null), render: () => `
+   <div class="st-k">${L("Wellen-Quiz","Wave quiz")} · ${L("bis","up to")} +20 XP</div><h2 class="st-h">${L("Brainwave Entrainment","Brainwave entrainment")}</h2>
+   <p class="st-p">${L("Die erste Antwort zählt. Schau auf die Leinwand.","Your first answer counts. Look at the screen.")}</p>
+   ${QUIZ.map((q,qi) => {
+      const ans = S.quiz[qi];
+      return '<div class="grp-h">' + L(q.q[0], q.q[1]) + '</div><div class="opt g5" data-q="'+qi+'">' + WAVES.map((w,wi) => '<button data-i="'+wi+'" '+(ans!=null?'disabled ':'')+'class="'+(ans!=null ? (wi===q.a ? "right" : wi===ans ? "wrong" : "") : "")+'">'+w+'</button>').join("") + '</div>'
+        + (ans != null ? '<div class="fb '+(ans===q.a?"ok":"no")+'">' + (ans===q.a ? L("Richtig! +10 XP","Correct! +10 XP") : L("Knapp daneben, " + WAVES[q.a] + " wäre richtig. +3 XP fürs Mitmachen.","Close – it's " + WAVES[q.a] + ". +3 XP for playing.")) + '</div>' : '');
+   }).join("")}`,
+   bind(){ $$("[data-q]").forEach(g => $$("button", g).forEach(b => b.onclick = () => { const qi = +g.dataset.q; if (S.quiz[qi] != null) return; S.quiz[qi] = +b.dataset.i; ptoast(S.quiz[qi] === QUIZ[qi].a ? "+10 XP" : "+3 XP"); save(); renderStation(); })); } },
+ { name:["Phasen-Sortierer","Phase sorter"], done: () => SORT_SEQ.every(no => S.sort[no] != null), render: () => {
+   const next = SORT_SEQ.find(no => S.sort[no] == null);
+   const doneN = SORT_SEQ.filter(no => S.sort[no] != null).length;
+   const right = SORT_SEQ.filter(no => S.sort[no] != null && S.sort[no] === SYMPTOMS.find(x => x.no === no).pi).length;
+   const last = [...SORT_SEQ].reverse().find(no => S.sort[no] != null);
+   let fb = "";
+   if (last != null && S.lastSort === last){ const s = SYMPTOMS.find(x => x.no === last); const ok = S.sort[last] === s.pi; fb = '<div class="fb '+(ok?"ok":"no")+'">'+(ok ? L("Richtig, Phase " + PHASES[s.pi].n + ". +5 XP","Correct, phase " + PHASES[s.pi].n + ". +5 XP") : L("Das gehört zu Phase " + PHASES[s.pi].n + ". +1 XP","That belongs to phase " + PHASES[s.pi].n + ". +1 XP"))+'</div>'; }
+   const s = next != null ? SYMPTOMS.find(x => x.no === next) : null;
+   return `<div class="st-k">${L("Phasen-Sortierer","Phase sorter")} · ${doneN}/6 · ${L("bis","up to")} +30 XP</div><h2 class="st-h">${L("In welche Phase gehört dieses Symptom?","Which phase does this symptom belong to?")}</h2>`
+     + fb
+     + (s ? '<div class="res"><b>' + L(s.de, s.en) + '</b></div><div class="opt g6" id="soOpt">' + PHASES.map((p,i) => '<button data-i="'+i+'">'+p.n+'</button>').join("") + '</div>'
+          : '<div class="res"><b>' + L(right + " von 6 richtig", right + " of 6 correct") + '</b><span class="st-p">' + L("Deine Punkte zählen auch für dein Team.","Your points also count for your team.") + '</span></div>'); },
+   bind(){ $$("#soOpt button").forEach(b => b.onclick = () => { const no = SORT_SEQ.find(n => S.sort[n] == null); S.sort[no] = +b.dataset.i; S.lastSort = no; const ok = S.sort[no] === SYMPTOMS.find(x => x.no === no).pi; ptoast(ok ? "+5 XP" : "+1 XP"); save(); renderStation(); }); } },
+ { name:["Selbstcheck","Self-check"], done: () => !!S.selfDone, render: () => `
+   <div class="st-k">${L("Selbstcheck","Self-check")} · +10 XP ${L("fürs Mitmachen","for taking part")}</div><h2 class="st-h">${L("Welche Signale kennst du von dir?","Which signals do you know from yourself?")}</h2>
+   <p class="st-p">${L("Nur für dich. Nichts davon wird übertragen.","Only for you. Nothing is shared.")}</p>
+   ${PHASES.map(p => '<div class="grp-h">Phase '+p.n+(p.tag ? ' · ' + L(p.tag[0], p.tag[1]) : '')+'</div><div class="grp">'+p.items.map(([no,de,en]) => '<div class="cell"><label for="sy'+no+'">'+L(de,en)+'</label><input type="checkbox" class="sw" id="sy'+no+'" data-no="'+no+'" '+(S.sym[no]?"checked":"")+'></div>').join("")+'</div>').join("")}
+   <div class="res" id="syRes"></div>
+   <button class="pbtn" id="syDone">${S.selfDone ? L("Erledigt ✓","Done ✓") : L("Selbstcheck abschließen","Finish self-check")}</button>
+   <p class="fine">${L("Kein Diagnoseinstrument. Wenn dich etwas davon belastet, sprich mit deiner Ärztin, deinem Arzt oder deiner Therapeutin.","Not a diagnostic tool. If any of this worries you, talk to your doctor or therapist.")}</p>`,
+   bind(){ const upd = () => { const hit = SYMPTOMS.filter(s => S.sym[s.no]); const last = hit.length ? Math.max(...hit.map(s => s.pi)) : -1;
+       $("#syRes").innerHTML = '<b>' + L(hit.length + " von " + SYMPTOMS.length + " Signalen", hit.length + " of " + SYMPTOMS.length + " signals") + '</b><span class="st-p">' + (hit.length ? L("Am weitesten reicht es bei dir in Phase " + PHASES[last].n + ".","Your furthest signal is in phase " + PHASES[last].n + ".") : L("Noch nichts angetippt.","Nothing tapped yet.")) + '</span>'; };
+     $$(".sw").forEach(c => c.onchange = () => { S.sym[c.dataset.no] = c.checked; store(KEY, JSON.stringify(S)); upd(); });
+     $("#syDone").onclick = () => { if (!S.selfDone){ S.selfDone = true; ptoast("+10 XP"); save(); renderStation(); } }; upd(); } },
+ { name:["Wortwolke","Word cloud"], done: () => S.words.length > 0, render: () => `
+   <div class="st-k">${L("Wortwolke","Word cloud")} · +2 XP ${L("pro Wort","per word")}, +5 ${L("pro Treffer","per match")}</div><h2 class="st-h">${L("Was ist das Gegenteil von „dormant“ (schlafend)?","What's the opposite of dormant?")}</h2>
+   <div class="grp"><div class="fld"><label for="wIn">${L("Dein Wort (bis zu drei)","Your word (up to three)")}</label><input id="wIn" maxlength="24" autocomplete="off" ${S.words.length>=3||S.reveal?"disabled":""}></div></div>
+   <button class="pbtn" id="wAdd" ${S.words.length>=3||S.reveal?"disabled":""}>${L("Wort abschicken","Send word")}</button>
+   <div class="chips" id="wChips">${S.words.map((w,i)=>'<span class="'+(S.reveal && OPPOSITE.includes(w.toLowerCase())?"hit":"")+'">'+esc(w)+(S.reveal?"":'<button data-i="'+i+'" aria-label="x">×</button>')+'</span>').join("")}</div>
+   ${S.reveal ? '<div class="res"><b>' + L("Auflösung","Answer") + '</b><span class="st-p">active, awake, lively, conscious, wakeful, alert, energetic, alive, busy, functioning → <b>' + L("smart und agil","smart and agile") + '</b></span><span>' + L(S.words.filter(w => OPPOSITE.includes(w.toLowerCase())).length + " Treffer", S.words.filter(w => OPPOSITE.includes(w.toLowerCase())).length + " matches") + '</span></div>'
+     : '<button class="sbtn" id="wRev" '+(S.words.length?"":"disabled")+'>' + L("Auflösung zeigen (wenn Alexander sie zeigt)","Show answer (when Alexander does)") + '</button>'}`,
+   bind(){ const add = () => { const inp = $("#wIn"); const v = inp.value.trim(); if (!v || S.words.length >= 3) return; S.words.push(v); ptoast("+2 XP"); save(); renderStation(); };
+     $("#wAdd").onclick = add; $("#wIn").onkeydown = e => { if (e.key === "Enter") add(); };
+     $$("#wChips button").forEach(b => b.onclick = () => { S.words.splice(+b.dataset.i,1); save(); renderStation(); });
+     const r = $("#wRev"); if (r) r.onclick = () => { S.reveal = true; const m = S.words.filter(w => OPPOSITE.includes(w.toLowerCase())).length; if (m) ptoast("+" + m*5 + " XP"); save(); renderStation(); }; } },
+ { name:["Du bist der Fall","You are the case"], done: () => ["c1","c2","pulse","c4","mood","happy"].every(k => filled(S.cs[k])), render: () => `
+   <div class="st-k">${L("Du bist der Fall!","You are the case!")} · +5 XP ${L("pro Aufgabe","per task")}</div><h2 class="st-h">${L("Ich bin … Ich fühle … Ich habe …","I am … I feel … I have …")}</h2>
+   <p class="st-p">${L("Nur für dich, bleibt auf deinem Handy.","Only for you, stays on your phone.")}</p>
+   <div class="grp-h">${L("Ich bin …","I am …")}</div>
+   <div class="grp">
+     <div class="fld"><label for="cs1">1. ${L("Schreib deine Überzeugungen über dich als Person auf","Write down your beliefs about yourself as a person")}</label><textarea id="cs1" data-cs="c1">${esc(S.cs.c1)}</textarea></div>
+     <div class="fld"><label for="cs2">2. ${L("Welche Erinnerung belastet dich?","Which memory burdens you?")}</label><textarea id="cs2" data-cs="c2">${esc(S.cs.c2)}</textarea></div>
+   </div>
+   <div class="grp-h">${L("Ich fühle …","I feel …")}</div>
+   <div class="grp">
+     <div class="fld"><label>3. ${L("Fühl deine Herzfrequenz / deinen Herzschlag","Feel your heartrate/heart beat")}</label>
+       <div style="display:flex;gap:12px;align-items:center"><b id="pT" style="font-size:28px;font-variant-numeric:tabular-nums;min-width:64px">0:30</b><button class="sbtn" id="pBtn"></button></div>
+       <input id="cs3" data-cs="pulse" type="number" inputmode="numeric" min="30" max="220" placeholder="${lang==="en"?"beats per minute":"Schläge pro Minute"}" value="${esc(S.cs.pulse)}" aria-label="BPM"></div>
+     <div class="fld"><label for="cs4">4. ${L("Weitere körperliche Messwerte","Other physical measures")}</label><input id="cs4" data-cs="c4" value="${esc(S.cs.c4)}" placeholder="${lang==="en"?"e.g. sleep, steps, HRV":"z. B. Schlaf, Schritte, HRV"}"></div>
+   </div>
+   <div class="grp-h">${L("Ich habe …","I have …")}</div>
+   <div class="grp">
+     <div class="fld"><label for="cs5">5. ${L("Daten über deinen emotionalen Zustand?","Data about your emotional status?")} <span id="moodV">${S.cs.mood ?? "–"}</span>/10</label><input id="cs5" class="rng" type="range" min="1" max="10" value="${S.cs.mood ?? 5}"></div>
+     <div class="fld"><label>6. ${L("Emotionale Geschichte? Wie viele glückliche Momente in letzter Zeit?","Emotional history? How many happy moments recently?")}</label>
+       <div class="counter"><button id="hm" aria-label="minus">−</button><b id="hv">${S.cs.happy ?? 0}</b><button id="hp" aria-label="plus">+</button></div></div>
+   </div>`,
+   bind(){ $$("[data-cs]").forEach(f => f.oninput = () => { S.cs[f.dataset.cs] = f.value; save(); });
+     $("#cs5").oninput = e => { S.cs.mood = +e.target.value; $("#moodV").textContent = S.cs.mood; save(); };
+     const setH = v => { S.cs.happy = Math.max(0, Math.min(99, v)); $("#hv").textContent = S.cs.happy; save(); };
+     $("#hm").onclick = () => setH((S.cs.happy ?? 0) - 1); $("#hp").onclick = () => setH((S.cs.happy ?? 0) + 1);
+     let left = 30, run = null; const Tm = $("#pT"), B = $("#pBtn"); B.innerHTML = L("30 Sek. starten","Start 30 sec");
+     B.onclick = () => { if (run){ clearInterval(run); run = null; left = 30; Tm.textContent = "0:30"; B.innerHTML = L("30 Sek. starten","Start 30 sec"); return; }
+       B.innerHTML = L("Abbrechen","Cancel"); run = setInterval(() => { left--; Tm.textContent = "0:" + String(Math.max(0,left)).padStart(2,"0"); if (left <= 0){ clearInterval(run); run = null; Tm.innerHTML = L("×2","×2"); B.innerHTML = L("Noch einmal","Again"); left = 30; try { navigator.vibrate && navigator.vibrate(200); } catch(e){} } }, 1000); }; } },
+ { name:["Mein Plan","My plan"], done: () => S.chal.on, render: () => `
+   <div class="st-k">${L("Aktivitätspläne","Activity plans")} · ${L("bis","up to")} +50 XP</div><h2 class="st-h">${L("Drei Pläne, je ein Satz.","Three plans, one sentence each.")}</h2>
+   <div class="grp">
+     <div class="fld"><label for="pl1">${L("Körperlicher Aktivitätsplan","Physical activity plan")}</label><textarea id="pl1" data-k="koerper">${esc(S.plan.koerper)}</textarea></div>
+     <div class="fld"><label for="pl2">${L("Mentaler Aktivitätsplan","Mental activity plan")}</label><textarea id="pl2" data-k="mental">${esc(S.plan.mental)}</textarea></div>
+     <div class="fld"><label for="pl3">${L("Emotionaler Aktivitätsplan","Emotional activity plan")}</label><textarea id="pl3" data-k="emotional">${esc(S.plan.emotional)}</textarea></div>
+   </div>
+   <div class="grp-h">${L("14-Tage-Wach-Challenge","14-day wake-up challenge")}</div>
+   ${S.chal.on ? '<div class="streak" id="streak">' + Array.from({length:14}, (_,i) => '<button class="'+(S.chal.days[i]?"on":"")+'" data-d="'+i+'" aria-label="'+(i+1)+'">'+(i+1)+'</button>').join("") + '</div><p class="fine">' + L("Tipp jeden Tag an, an dem du deinen Plan umgesetzt hast: +2 XP pro Tag.","Tap each day you followed your plan: +2 XP per day.") + '</p>'
+     : '<button class="pbtn" id="chStart">' + L("Challenge starten · +10 XP","Start challenge · +10 XP") + '</button>'}`,
+   bind(){ $$("[data-k]").forEach(f => f.oninput = () => { S.plan[f.dataset.k] = f.value; save(); });
+     const st = $("#chStart"); if (st) st.onclick = () => { S.chal.on = true; ptoast("+10 XP"); save(); renderStation(); };
+     $$("#streak button").forEach(b => b.onclick = () => { const d = +b.dataset.d; S.chal.days[d] = !S.chal.days[d]; b.classList.toggle("on", S.chal.days[d]); if (S.chal.days[d]) ptoast("+2 XP"); save(); }); } },
+ { name:["Visitenkarte","Business card"], done: () => filled(S.card.name) && filled(S.card.studio), render: () => `
+   <div class="st-k">${L("Netzwerk-Quest","Network quest")} · +10 XP</div><h2 class="st-h">${L("Deine Studio-Visitenkarte","Your studio business card")}</h2>
+   <p class="st-p">${L("Zeig sie nach dem 3-Minuten-Austausch jemandem aus einem anderen Team.","Show it to someone from another team after the 3-minute exchange.")}</p>
+   <div class="bc" id="bc"></div>
+   <div class="grp">
+     <div class="fld"><label for="c0">Name</label><input id="c0" data-c="name" value="${esc(S.card.name)}" autocomplete="name"></div>
+     <div class="fld"><label for="c1">${L("Studio und Stadt","Studio and city")}</label><input id="c1" data-c="studio" value="${esc(S.card.studio)}"></div>
+     <div class="fld"><label for="c2">${L("Instagram oder Website","Instagram or website")}</label><input id="c2" data-c="web" value="${esc(S.card.web)}" autocapitalize="off"></div>
+     <div class="fld"><label for="c3">${L("Darüber rede ich gern","I like to talk about")}</label><input id="c3" data-c="topic" value="${esc(S.card.topic)}"></div>
+   </div>`,
+   bind(){ const upd = () => { const c = S.card; $("#bc").innerHTML = '<div class="n">'+esc(c.name || (lang==="en"?"Your name":"Dein Name"))+'</div><div class="s">'+esc(c.studio || (lang==="en"?"Your studio, your city":"Dein Studio, deine Stadt"))+'</div><div>'+esc(c.web || "@deinstudio")+'</div><div class="t">'+(c.topic ? L("Gern im Gespräch über: ","Happy to talk about: ") + esc(c.topic) : "Polestar Pilates Community")+(S.team!=null?' · Team '+TEAMS[S.team][0]:'')+'</div><img src="'+LOGO.wm+'" alt="Polestar" style="height:40px;width:auto;align-self:flex-end;opacity:.85">'; };
+     $$("[data-c]").forEach(f => f.oninput = () => { S.card[f.dataset.c] = f.value; save(); upd(); }); upd(); } },
+ { name:["Takeaway","Takeaway"], done: () => false, render: () => {
+   const x = xp(), lv = levelOf(x), hit = SYMPTOMS.filter(s => S.sym[s.no]).length;
+   const row = (l, v) => '<div class="cell"><span class="lab">'+l+'</span><span class="v">'+(filled(v) ? esc(v) : "–")+'</span></div>';
+   return `<div class="st-k">${L("Dein Takeaway","Your takeaway")}</div><h2 class="st-h">${L("Level: ","Level: ")}${L(LEVELS[lv][1], LEVELS[lv][2])} · ${x} XP</h2>
+   <div class="badges">${STATIONS.slice(0,10).map(s => '<div class="bdg '+(s.done()?"on":"")+'">'+L(s.name[0], s.name[1])+'</div>').join("")}</div>
+   <div class="grp">${row(L("Team","Team"), S.team!=null?TEAMS[S.team][0]:"")}${row("Check-in", S.wach ? S.wach + "/10" : "")}${row(L("Puls","Pulse"), S.cs.pulse ? S.cs.pulse + " BPM" : "")}${row(L("Selbstcheck","Self-check"), hit + "/" + SYMPTOMS.length)}</div>
+   <div class="grp-h">${L("Meine Pläne","My plans")}</div>
+   <div class="grp">${row(L("Körperlich","Physical"), S.plan.koerper)}${row(L("Mental","Mental"), S.plan.mental)}${row(L("Emotional","Emotional"), S.plan.emotional)}${row(L("Challenge","Challenge"), S.chal.on ? S.chal.days.filter(Boolean).length + "/14" : "")}</div>
+   <p class="st-p">${L("In 14 Tagen fragt Alexander nach: Was hast du umgesetzt?","In 14 days Alexander will ask: what did you put into practice?")}</p>
+   <button class="sbtn" id="reset">${L("Alle Eingaben auf diesem Handy löschen","Delete all entries on this phone")}</button><div id="resetC"></div>`; },
+   bind(){ $("#reset").onclick = () => { $("#resetC").innerHTML = '<div class="res"><span>' + L("Wirklich alles löschen?","Really delete everything?") + '</span><div style="display:flex;gap:10px"><button class="sbtn" id="rNo">' + L("Abbrechen","Cancel") + '</button><button class="pbtn" id="rYes" style="width:auto">' + L("Löschen","Delete") + '</button></div></div>';
+     $("#rNo").onclick = () => $("#resetC").innerHTML = ""; $("#rYes").onclick = () => { S = {}; norm(); lastLv = 0; save(); si = 0; renderStation(); }; }; } }
+];
+function renderStation(){
+  const st = STATIONS[si];
+  $("#station").innerHTML = st.render();
+  st.bind && st.bind();
+  renderXP();
+  $("#dots").innerHTML = STATIONS.map((s,i) => '<button class="'+(i===si?"cur":s.done()?"done":"")+'" aria-label="'+esc(s.name[lang==="en"?1:0])+'" data-i="'+i+'"></button>').join("");
+  $$("#dots button").forEach(b => b.onclick = () => { si = +b.dataset.i; renderStation(); scrollTo(0,0); });
+  $("#sPrev").disabled = si === 0; $("#sPrev").style.opacity = si === 0 ? .4 : 1;
+  $("#sNext").innerHTML = si === STATIONS.length-2 ? L("Zum Takeaway","To takeaway") : si === STATIONS.length-1 ? L("Fertig","Done") : L("Weiter","Next");
+}
+$("#sPrev").onclick = () => { if (si > 0){ si--; renderStation(); scrollTo(0,0); } };
+$("#sNext").onclick = () => { if (si < STATIONS.length-1){ si++; renderStation(); scrollTo(0,0); } else { location.hash = "start"; } };
+$$("#v-mitmachen [data-setlang]").forEach(b => b.addEventListener("click", () => renderStation()));
+
+/* ---------- Routing ---------- */
+function route(){
+  const h = location.hash.slice(1);
+  const v = h === "buehne" ? "buehne" : h === "mitmachen" ? "mitmachen" : "start";
+  $$(".view").forEach(el => el.hidden = el.dataset.view !== v);
+  document.documentElement.dataset.view = v;
+  if (v === "buehne"){ requestAnimationFrame(() => { fit(); go(cur, true); }); }
+  else { clearTimers(); stopWaves(); }
+  if (v === "mitmachen") renderStation();
+  scrollTo(0,0);
+}
+addEventListener("hashchange", route);
+route();
+})();
+</script>
+
+</body>
+</html>
